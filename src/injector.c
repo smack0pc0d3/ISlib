@@ -87,8 +87,8 @@ void StartInjector(char *devname, int protocol)
                 i = (((unsigned)i) == (unsigned)packet_req.tp_frame_nr)? 0 : i+1;
                 break;
             case TP_STATUS_WRONG_FORMAT:
-                fprintf(stderr, "An error has occured during
-                        transfer");
+                fprintf(stderr, "An error has occured during"
+                        "transfer");
                 exit(ERROR);
             default:
                 if ( poll(&pfd, 1, -1) < 0 )

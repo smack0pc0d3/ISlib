@@ -3,6 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void Print_Mac(void);
+void PrintMac(unsigned char *mac);
 void *Malloc(size_t size);
 #endif

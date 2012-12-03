@@ -8,20 +8,20 @@ void Client_Init(void)
     router = NULL;
 }
 
-bool SearchClientMac(unsigned char *mac)
+int SearchClientMac(unsigned char *mac)
 {
     struct client   *tmp;
-    bool            found = false;
+    int            found = FALSE;
 
     if( ClientExist() == -1 )
-        return false;
+        return FALSE;
     tmp = c;
 
     do
     {
         if ( memcmp(mac, tmp -> mac, 6) == 0 )
         {
-            found = true;
+            found = TRUE;
             break;
         }
         tmp = tmp -> next;
@@ -29,7 +29,6 @@ bool SearchClientMac(unsigned char *mac)
     while ( tmp != (struct client *)NULL );
 
     return found;
-
 }
 
 void AddClient(unsigned char *mac, unsigned char *ip)

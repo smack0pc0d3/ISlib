@@ -3,13 +3,13 @@
 #include "client.h"
 #include "misc.h"
 
-void DestructorSniffer(void)
+void Sniffer_Destroy(void)
 {
 	struct tpacket_stats st;
 	int len = sizeof(st);
 
 	if (!getsockopt(fd,SOL_PACKET,PACKET_STATISTICS,(char *)&st,(socklen_t *)&len))
-      fprintf("recieved %d packets, dropped %d packets"
+      printf("recieved %d packets, dropped %d packets"
               ,st.tp_packets, st.tp_drops);
 
     if ( ps_hdr_start )
@@ -21,7 +21,7 @@ void DestructorSniffer(void)
 
 void StartSniffer(char *devname, int protocol)
 {
-	  struct ifreq		newfl;
+	  struct ifreq		    newfl;
 	  struct iovec        packet_ring;
 	  struct tpacket_hdr  *packet_hdr;
 	  struct pollfd       pfd;
@@ -90,35 +90,37 @@ void AnalyzePacket(struct iovec packet_ring)
     struct ether_header     *eth;
     struct ip               *iptr;
     struct  ether_arp       *arptr;
-    Misc		            m;
 
-    eth = (ether_header *)packet_ring.iov_base;
-    cout << "=-=-=-=-=-=-=-=-=-=-=\n"
-         << "Ethernet Header" << endl;
-    cout << "source mac:";
-    m.PrintMac(eth->ether_shost);
-    cout << endl;
-    cout << "destination mac:";
-    m.PrintMac(eth->ether_dhost);
-    cout << endl;
+    if ( packet_ring.iov_len > sizeof(struct ether_header) )
+    {
+      eth = (struct ether_header *)packet_ring.iov_base;
+      printf("=-=-=-=-=-=-=-=-=-=-=\n"
+              "Ethernet Header");
+      printf("source mac:");
+      PrintMac(eth->ether_shost);
+      printf("destination mac:");
+      PrintMac(eth->ether_dhost);
+    }
+    else
+        return;
 
     switch(ntohs(eth->ether_type))
     {
         case ETHERTYPE_IP:
             iptr = (struct ip *)((unsigned char *)packet_ring.iov_base+sizeof(struct ether_header));
-            cout << "=-=-=-=-=-=-=-=-=-=-=\n"
-                 << "Ip      Header" << endl;
-            cout << "source_addr:" << inet_ntoa(iptr -> ip_src) << endl;
-            cout << "destination_addr:" << inet_ntoa(iptr -> ip_dst) << endl;
+            printf("=-=-=-=-=-=-=-=-=-=-=\n"
+                    "Ip      Header\n");
+            printf("source_addr: %s\n",inet_ntoa(iptr -> ip_src));
+            printf("destination_addr: %s\n",inet_ntoa(iptr -> ip_dst));
             break;
         case ETHERTYPE_ARP:
            arptr = (struct ether_arp *)((unsigned char *)packet_ring.iov_base+sizeof(struct ether_header));
-           cout << "=-=-=-=-=-=-=-=-=-=-=\n"
-                 << "Arp     Header" << endl;
-           cout << "sender ip:" << arptr->arp_spa << endl;
+           printf("=-=-=-=-=-=-=-=-=-=-=\n"
+                   "Arp     Header\n");
+           printf("sender ip: %s\n", arptr->arp_spa);
            break;
         default:
-            cout << "unknown" << endl;
+            printf("unknown\n");
             break;
     }
 
@@ -128,6 +130,4 @@ void SetAnalyzer(void(*Analyze)(struct iovec ))
 {
     Analyzer = Analyze;
 }
-
-
 

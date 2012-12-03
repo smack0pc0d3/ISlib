@@ -1,7 +1,6 @@
 #ifndef INJECTOR_H
 #define INJECTOR_H
-
-#include <iostream>
+#include <stdio.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <poll.h>

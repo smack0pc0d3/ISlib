@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define FALSE 0
+#define TRUE  0
+
 struct client
 {
 	unsigned char	ip[4];
@@ -22,7 +25,7 @@ void PrintClients(void);
 void PrintRouter(void);
 void AddClient(unsigned char *mac, unsigned char *ip);
 void AddRouter(unsigned char *mac, unsigned char *ip);
-bool SearchClientMac(unsigned char *mac);
+int SearchClientMac(unsigned char *mac);
 struct client *GetClient(int i);
 struct client *GetRouter(void);
 

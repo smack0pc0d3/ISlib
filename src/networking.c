@@ -1,4 +1,5 @@
 #include "networking.h"
+#include "misc.h"
 
 int CreateSocket(int family, int type, int protocol)
 {
@@ -151,11 +152,11 @@ unsigned char *GetRouterIp(void)
     int sock, recv_len, total_recv_len;
     struct in_addr *gateway;
     
-    gateway = new struct in_addr;
+    gateway = Malloc(sizeof(struct in_addr));
     memset( buf_msg, 0, NLBUFSIZE );
     nl_hdr = (struct nlmsghdr*) buf_msg;
     
-    // initialize the struct to get the route table
+    // initialize the struct to get the rou))te table
     nl_hdr->nlmsg_len = NLMSG_LENGTH( sizeof(struct rtmsg) );
     nl_hdr->nlmsg_type = RTM_GETROUTE;
     nl_hdr->nlmsg_flags = NLM_F_DUMP | NLM_F_REQUEST;
@@ -248,7 +249,7 @@ unsigned char *GetMac(int fd, char *device)
     unsigned char   *mac;
     struct ifreq    ifr;
 
-    mac = new unsigned char[6];
+    mac = Malloc( sizeof(unsigned char) *6);
     memcpy(ifr.ifr_name, device, 6);
 
     if ( ioctl(fd, SIOCGIFHWADDR, &ifr) == ERROR )
@@ -268,7 +269,7 @@ unsigned char *GetIp(int fd, char *device)
     unsigned char       *ip;
     struct ifreq        ifr;
 
-    ip = new unsigned char[4];
+    ip = Malloc(sizeof(unsigned char) *4);
     memcpy(ifr.ifr_name, device, IFNAMSIZ);
 
     if ( ioctl(fd, SIOCGIFADDR, &ifr) == ERROR )
