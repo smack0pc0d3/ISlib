@@ -1,20 +1,12 @@
 #ifndef NETWORKING_H
 #define NETWORKING_H
-#include <unistd.h>
-#include <netdb.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/ioctl.h>
-#include <net/if.h>
-#include <string.h>
-#include <linux/if_packet.h>
-#include <linux/netlink.h>
-#include <linux/rtnetlink.h>
-#include <net/if_arp.h>
 
+#include <netinet/in.h>
+#include <netdb.h>
+#include <linux/if_packet.h>
+#include <sys/ioctl.h>
+#include <net/if.h> 
+ 
 #define ERROR   -1
 
 int CreateSocket(int family, int type, int protocol);

@@ -1,4 +1,7 @@
 #include "client.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include "misc.h"
 
 void Client_Init(void)

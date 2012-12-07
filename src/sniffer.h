@@ -13,11 +13,6 @@
 #include <netinet/ip.h>
 #include <netinet/if_ether.h>
 
-static void (*Analyzer)(struct iovec);
-static struct tpacket_req      	packet_req;
-static unsigned char           	*ps_hdr_start;
-static int			fd;
-
 void SetAnalyzer(void(*Analyze)(struct iovec ));
 void DestructorSniffer(void);
 void StartSniffer(char *devname, int protocol);

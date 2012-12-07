@@ -1,5 +1,16 @@
 #include "networking.h"
 #include "misc.h"
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <linux/netlink.h>
+#include <linux/rtnetlink.h>
+#include <net/if_arp.h>
+
 
 int CreateSocket(int family, int type, int protocol)
 {

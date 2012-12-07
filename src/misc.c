@@ -1,4 +1,5 @@
 #include "misc.h"
+#include <stdio.h>
 
 void Print_Mac(unsigned char *mac)
 {
@@ -15,15 +16,16 @@ void Print_Mac(unsigned char *mac)
 
 void *Malloc(size_t size)
 {
-    void  *tmp;
+    void  *p;
 
-    tmp = malloc(size);
+    p = malloc(size);
 
-    if ( tmp == NULL )
+    if ( p == NULL )
     {
-        fprintf(stderr, "Error: Malloc()");
+        fprintf(stderr, "Malloc()\n");
         exit(-1);
     }
-    return tmp;
+
+    return p;
 }
 

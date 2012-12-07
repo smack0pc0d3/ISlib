@@ -1,7 +1,23 @@
 #include "injector.h"
+#include <stdio.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <poll.h>
+#include <net/ethernet.h>
+#include <netinet/if_ether.h>
+#include <sys/mman.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <linux/if_packet.h>
+#include <netinet/ip.h>
+#include <netinet/if_ether.h>
+#include "networking.h"
+#include "client.h"
+#include "queqe.h"
 
 
-void DestructorInjector()
+
+void Injector_Destroy(void)
 {
     struct tpacket_stats st;
     int len = sizeof(st);
@@ -19,28 +35,33 @@ void DestructorInjector()
 
 void StartInjector(char *devname, int protocol)
 {
-    struct ifreq		    newfl;
-    struct iovec        packet_ring;
-	  struct tpacket_hdr  *packet_hdr;
-	  struct pollfd       pfd;
-	  register int        i;
-	  struct sockaddr_ll	sock_ll;
-	  int                 size;
-	  int                 data_off;
-
+    struct ifreq		          newfl;
+    struct iovec              packet_ring;
+	  struct tpacket_hdr        *packet_hdr;
+	  struct pollfd             pfd;
+	  register int              i;
+	  struct sockaddr_ll	      sock_ll;
+	  int                       size;
+	  int                       data_off;
+    
+    queue_add(injector_queqe);
     data_off = TPACKET_HDRLEN- sizeof(struct sockaddr_ll);
+    //create socket
     fd = CreateSocket(PF_PACKET, SOCK_RAW, protocol);
-	  newfl = GetIndex(fd, devname);
+	  //get index bind socket
+    newfl = GetIndex(fd, devname);
 	  memset((char *)&sock_ll, '\0', sizeof(struct sockaddr_ll));
 	  sock_ll.sll_family = AF_PACKET;
 	  sock_ll.sll_protocol = htons(protocol);
 	  sock_ll.sll_ifindex = newfl.ifr_ifindex;
 	  BindSocket(fd, (struct sockaddr *)&sock_ll, sizeof(struct sockaddr_ll));
+    //request packet ring
     packet_req.tp_block_size = 4096;
 	  packet_req.tp_frame_size = 1024;
 	  packet_req.tp_block_nr = 64;
 	  packet_req.tp_frame_nr = 4*64;
 	  RequestPacketRing(fd, PACKET_TX_RING, packet_req);
+    //map shared memory
     size = packet_req.tp_block_size * packet_req.tp_block_nr;
     ps_hdr_start =(unsigned char *) mmap(0, size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
     
@@ -50,6 +71,7 @@ void StartInjector(char *devname, int protocol)
         DestroySocket(fd);
         exit(ERROR);
     }
+    //poll for our fd
     pfd.fd = fd;
     pfd.revents = 0;
     pfd.events = POLLIN|POLLRDNORM|POLLERR;
@@ -88,7 +110,7 @@ void StartInjector(char *devname, int protocol)
                 break;
             case TP_STATUS_WRONG_FORMAT:
                 fprintf(stderr, "An error has occured during"
-                        "transfer");
+                        "transfer\n");
                 exit(ERROR);
             default:
                 if ( poll(&pfd, 1, -1) < 0 )
