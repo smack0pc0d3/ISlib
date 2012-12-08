@@ -12,6 +12,7 @@ struct isqueqe
     unsigned char       *ps_hdr_start;
     int                 fd;
     pthread_t           id;
+    struct isqueqe      *previous;
     struct isqueqe  	  *next;
 };
 

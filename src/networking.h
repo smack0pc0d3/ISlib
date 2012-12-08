@@ -1,10 +1,8 @@
 #ifndef NETWORKING_H
 #define NETWORKING_H
 
-#include <netinet/in.h>
 #include <netdb.h>
 #include <linux/if_packet.h>
-#include <sys/ioctl.h>
 #include <net/if.h> 
  
 #define ERROR   -1
