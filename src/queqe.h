@@ -3,14 +3,15 @@
 
 #include <net/if.h> //struct iovec
 #include <linux/if_packet.h> //struct tpacket_req
- 
+#include <pthread.h> //pthread_t
+
 struct isqueqe
 {
     void                (*FunctionPtr)(struct iovec *);
     struct tpacket_req  packet_req;
     unsigned char       *ps_hdr_start;
     int                 fd;
-    unsigned int        id;
+    pthread_t           id;
     struct isqueqe  	  *next;
 };
 

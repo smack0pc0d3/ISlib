@@ -1,29 +1,28 @@
 #include "queqe.h"
-#include "misc.h"
-#include <stdlib.h>
+#include "misc.h" //Malloc
+#include <stdlib.h> //free
+
 struct isqueqe *add_queqe(struct isqueqe *q)
 {
     struct isqueqe  *tmp;
-    int id;
 
     if ( q == NULL )
     {
         q = Malloc(sizeof(struct isqueqe));
         tmp = q;
+        tmp -> id = pthread_self();
         tmp -> next = NULL;
-        tmp -> id = 0;
         return tmp;
     }
     tmp = q;
 
     while ( tmp -> next != NULL )
     {
-        id = tmp -> id;
         tmp = tmp -> next;
     }
     tmp -> next = Malloc(sizeof(struct isqueqe));
     tmp = tmp -> next;
-    tmp -> id++;
+    tmp -> id = pthread_self();
     tmp -> next = NULL;
     return tmp;
 }
