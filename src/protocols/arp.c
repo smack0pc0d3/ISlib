@@ -1,11 +1,11 @@
 #include "arp.h"
+#include "../client.h"
+#include <string.h>
+#include <stdio.h>
 
-
-void Arp_Init(void)
-{
-    cmutex = PTHREAD_MUTEX_INITIALIZER;
-    poisonC = FALSE;
-}
+extern unsigned char *src_ip;
+extern unsigned char *router_ip;
+extern unsigned char *src_mac;
 
 void AnalyzeArp(struct iovec packet_ring)
 {
@@ -115,7 +115,7 @@ void ConstructArpRequest(struct iovec *packet)
     struct ether_arp        *arp_header;
     static unsigned int     ipq = 0;
     unsigned char           tip[4];
-
+    
     //memcpy(tip, src_ip, 3);
     memcpy(tip, router_ip, 3);
     tip[3] = (char )ipq;
@@ -137,8 +137,8 @@ void ConstructArpRequest(struct iovec *packet)
     arp_header->ea_hdr.ar_pln = 4;
     arp_header->ea_hdr.ar_op = htons(ARPOP_REQUEST);
     memcpy((char *)arp_header->arp_sha, (char *)src_mac, 6);
-    memcpy((char *)arp_header->arp_spa, (char *)router_ip, 4);
-    //memcpy((char *)arp_header->arp_spa, (char *)src_ip, 4);
+    //memcpy((char *)arp_header->arp_spa, (char *)router_ip, 4);
+    memcpy((char *)arp_header->arp_spa, (char *)src_ip, 4);
     memcpy((char *)arp_header->arp_tpa, tip, 4);
     memset((char *)arp_header->arp_tha, '\0', 6);
     packet->iov_len = sizeof(struct ether_header)+sizeof(struct ether_arp);

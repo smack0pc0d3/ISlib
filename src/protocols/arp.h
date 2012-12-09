@@ -9,7 +9,7 @@ static pthread_mutex_t cmutex;
 static int             poisonC;
 
 void AnalyzeArp(struct iovec packet_ring);
-static void ConstructArpReply(struct iovec *packet);
-static void ConstructArpRequest(struct iovec *packet);
+void ConstructArpReply(struct iovec *packet);
+void ConstructArpRequest(struct iovec *packet);
 
 #endif

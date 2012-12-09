@@ -1,7 +1,7 @@
 #include "misc.h"
 #include <stdio.h>
 
-void Print_Mac(unsigned char *mac)
+void PrintMac(unsigned char *mac)
 {
     register int  i;
 

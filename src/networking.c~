@@ -150,46 +150,44 @@ ssize_t RecvSocket(int fd, void *buffer, size_t len, int flags)
 
 unsigned char *GetRouterIp(void)
 {
-int NLBUFSIZE = 8192;
-        struct nlmsghdr* nl_hdr;
-    	char buf_msg[NLBUFSIZE];
-    	char* buf_msg_p;
-    	int sock, recv_len, total_recv_len;
-    	struct in_addr *gateway;
+    int NLBUFSIZE = 8192;
+    struct nlmsghdr* nl_hdr;
+    char buf_msg[NLBUFSIZE];
+    char* buf_msg_p;
+    int sock, recv_len, total_recv_len;
+    struct in_addr *gateway;
+    
+    gateway = Malloc(sizeof(struct in_addr));
+    memset( buf_msg, 0, NLBUFSIZE );
+    nl_hdr = (struct nlmsghdr*) buf_msg;
+    
+    // initialize the struct to get the rou))te table
+    nl_hdr->nlmsg_len = NLMSG_LENGTH( sizeof(struct rtmsg) );
+    nl_hdr->nlmsg_type = RTM_GETROUTE;
+    nl_hdr->nlmsg_flags = NLM_F_DUMP | NLM_F_REQUEST;
+    nl_hdr->nlmsg_pid = getpid();
+    
+    // open a socket for netlink
+    sock = socket( PF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE );
+   	// send the message
+    send( sock, nl_hdr, nl_hdr->nlmsg_len, 0 );
+    buf_msg_p = buf_msg;
+    total_recv_len = 0;
 
-      gateway = Malloc(sizeof(struct in_addr));
-    	memset( buf_msg, 0, NLBUFSIZE );
-    	nl_hdr = (struct nlmsghdr*) buf_msg;
+    // receive the answer
+    while ((recv_len = recv( sock, buf_msg_p, NLBUFSIZE - total_recv_len, 0 )))
+    {
+        struct nlmsghdr* nl_hdr_tmp = (struct nlmsghdr *) buf_msg_p;
 
-    	// initialize the struct to get the route table
-    	nl_hdr->nlmsg_len = NLMSG_LENGTH( sizeof(struct rtmsg) );
-    	nl_hdr->nlmsg_type = RTM_GETROUTE;
-    	nl_hdr->nlmsg_flags = NLM_F_DUMP | NLM_F_REQUEST;
-    	nl_hdr->nlmsg_pid = getpid();
-
-    	// open a socket for netlink
-    	sock = socket( PF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE );
-
-    	// send the message
-    	send( sock, nl_hdr, nl_hdr->nlmsg_len, 0 );
-
-    	buf_msg_p = buf_msg;
-    	total_recv_len = 0;
-
-    	// receive the answer
-    	while ((recv_len = recv( sock, buf_msg_p, NLBUFSIZE - total_recv_len, 0 )))
+    	  // if its done break for loop
+        if ( nl_hdr_tmp->nlmsg_type == NLMSG_DONE )
+            break;
+        else
         {
-    	    struct nlmsghdr* nl_hdr_tmp = (struct nlmsghdr *) buf_msg_p;
-
-    	    // if its done break for loop
-        	if ( nl_hdr_tmp->nlmsg_type == NLMSG_DONE )
-                break;
-        	else
-            {
-            		buf_msg_p += recv_len;
-            		total_recv_len += recv_len;
-        	}
-    	} // end of while
+            buf_msg_p += recv_len;
+            total_recv_len += recv_len;
+        }
+    } // end of while
 
     // read the saved answers and extract the default gateway
     while ( NLMSG_OK(nl_hdr, (unsigned )total_recv_len) )
@@ -197,7 +195,7 @@ int NLBUFSIZE = 8192;
         struct rtmsg* rt_msg = (struct rtmsg*) NLMSG_DATA( nl_hdr );
         struct rtattr* rt_attr = (struct rtattr*) RTM_RTA( rt_msg );
         int rt_len = RTM_PAYLOAD( nl_hdr );
-        char gateway_tmp = 0, destination_tmp = 0;
+        char gateway_tmp = 0, destination_tmp;
         char gate[20];
 
         // read the route table entry's
@@ -206,7 +204,7 @@ int NLBUFSIZE = 8192;
             switch ( rt_attr->rta_type )
             {
                 case RTA_GATEWAY:
-                    memcpy( &gateway_tmp, RTA_DATA(rt_attr+4), sizeof(gateway_tmp));
+                    //memcpy( &gateway_tmp, RTA_DATA(rt_attr+4), sizeof(gateway_tmp));
                     memcpy(gate, RTA_DATA(rt_attr), 20);
                     break;
                 case RTA_DST:

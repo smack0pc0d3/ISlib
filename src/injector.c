@@ -24,16 +24,16 @@ void *InjectorThread(void *void_args)
     struct arguments  *args;
 
     args = (struct arguments *)void_args;
-    lock(&m);
+    pthread_mutex_lock(&m);
     iq = add_queqe(injector_queqe);
-    unlock(&m);
+    pthread_mutex_unlock(&m);
     SetConstructor(args -> FunctionPtr, iq);
     StartInjector(args -> device, args -> protocol, iq, args ->
             packet_len, args -> packet_num);
     StopInjector(args, iq);
 }
 
-void InjectorInit(char *dev, int protocol, void(*ptr)(struct iovec *),
+pthread_t InjectorInit(char *dev, int protocol, void(*ptr)(struct iovec *),
         unsigned int packet_len, unsigned int packet_num)
 {
     struct arguments  *args;
@@ -44,7 +44,10 @@ void InjectorInit(char *dev, int protocol, void(*ptr)(struct iovec *),
     args -> FunctionPtr = ptr;
     args -> packet_len = packet_len;
     args -> packet_num = packet_num;
+    if ( router_ip == NULL || src_ip == NULL )
+        GetRouterLocal(dev);
     pthread_create(&args -> thread, NULL, InjectorThread, (void *)args);
+    return args->thread;
 }
 
 
@@ -98,10 +101,10 @@ void StartInjector(char *devname, int protocol, struct isqueqe *iq,
         stop = 1;
         num = 1024;
     }
-    iq -> packet_req.tp_block_size = (len+sizeof(struct tpacket_hdr))*num;
-	  iq -> packet_req.tp_frame_size = len+sizeof(struct tpacket_hdr);
-	  iq -> packet_req.tp_block_nr = 2;
-	  iq -> packet_req.tp_frame_nr = num;
+    iq -> packet_req.tp_block_size = 4096;//(len+sizeof(struct tpacket_hdr))*num;
+	  iq -> packet_req.tp_frame_size = 2048;//len+sizeof(struct tpacket_hdr);
+	  iq -> packet_req.tp_block_nr = 4;
+	  iq -> packet_req.tp_frame_nr = 8;
 	  RequestPacketRing(iq -> fd, PACKET_TX_RING, iq -> packet_req);
     //map shared memory
     size = iq -> packet_req.tp_block_size * iq -> packet_req.tp_block_nr;
@@ -170,7 +173,7 @@ void StartInjector(char *devname, int protocol, struct isqueqe *iq,
         }
     }
 }
-
+/*
 void ConstructPacket(struct iovec *packet)
 {
     struct ether_header *ether;
@@ -192,6 +195,7 @@ void ConstructPacket(struct iovec *packet)
     memset((char *)arp_header->arp_tha, '\0', 6);
     packet->iov_len = sizeof(struct ether_header)+sizeof(struct ether_arp);
 }
+*/
 
 void GetRouterLocal(char *dev)
 {
