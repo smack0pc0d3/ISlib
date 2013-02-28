@@ -11,6 +11,9 @@ struct client
 	struct client	*next;
 };
 
+unsigned char *src_mac;
+unsigned char *src_ip;
+unsigned char *router_ip;
 static struct client   *c;
 static struct client   *router;
 
@@ -25,6 +28,7 @@ void AddRouter(unsigned char *mac, unsigned char *ip);
 int SearchClientMac(unsigned char *mac);
 struct client *GetClient(int i);
 struct client *GetRouter(void);
+void GetRouterLocal(char *dev);
 
 #endif
 

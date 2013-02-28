@@ -1,21 +1,21 @@
 #ifndef SNIFFER_H
 #define SNIFFER_H
-#include <stdio.h>
-#include <sys/ioctl.h>
-#include <net/if.h>
-#include <poll.h>
-#include <net/ethernet.h>
-#include <netinet/if_ether.h>
-#include <sys/mman.h>
-#include <sys/ioctl.h>
-#include <net/if.h>
-#include <linux/if_packet.h>
-#include <netinet/ip.h>
-#include <netinet/if_ether.h>
+#include <net/if.h> 
+#include "misc.h"
+#include "queue.h"
+#include <pthread.h>
 
-void SetAnalyzer(void(*Analyze)(struct iovec ));
-void DestructorSniffer(void);
-void StartSniffer(char *devname, int protocol);
-void AnalyzePacket(struct iovec packet_ring);
+pthread_mutex_t         m;
+static struct isqueue   *sniffer_queue = NULL;
+
+void *SnifferThread(void *void_args);
+pthread_t SnifferInit(char *dev, int protocol, void(*ptr)(struct
+            iovec*),unsigned int packet_len, unsigned int packet_num,
+        char **argv);
+void StopSniffer(struct arguments *args, struct isqueue *iq);
+void StartSniffer(char *devname, int protocol, struct isqueue *iq,
+                unsigned int len, unsigned int num);
+void SetAnalyzer(void(*Analyze)(struct iovec *), struct isqueue *iq);
+void AnalyzePacket(struct iovec *packet_ring);
 #endif
 

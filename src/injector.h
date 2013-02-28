@@ -3,35 +3,22 @@
 
 #include <net/if.h> 
 #include "misc.h"
-#include "queqe.h"
+#include "queue.h"
 #include <pthread.h>
 
-struct arguments
-{
-    char  *device;
-    int   protocol;
-    void  (*FunctionPtr)(struct iovec *);
-    pthread_t  thread;
-    unsigned int  packet_len;
-    unsigned int  packet_num;
-};
 
 pthread_mutex_t m;
 
-unsigned char *src_mac;
-unsigned char *src_ip;
-unsigned char *router_ip;
 
-static struct isqueqe   *injector_queqe = NULL;
+static struct isqueue   *injector_queue = NULL;
 
-pthread_t InjectorInit(char *dev, int protocol, void (*ptr)(struct iovec
-            *), unsigned int packet_len, unsigned int packet_num);
+pthread_t InjectorInit(char *dev, int protocol, void (*ptr)(struct iovec *),
+        unsigned int packet_len, unsigned int packet_num, char **argv);
 void *InjectorThread(void *void_args);
-void StopInjector(struct arguments *args, struct isqueqe *iq);
-void StartInjector(char *devname, int protocol, struct isqueqe *iq,
+void StopInjector(struct arguments *args, struct isqueue *iq);
+void StartInjector(char *devname, int protocol, struct isqueue *iq,
         unsigned int len, unsigned int num);
 static void ConstructPacket(struct iovec *packet);
-void GetRouterLocal(char *dev);
-void SetConstructor(void (*ptr)(struct iovec *), struct isqueqe *iq);
+void SetConstructor(void (*ptr)(struct iovec *), struct isqueue *iq);
 #endif
 

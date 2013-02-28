@@ -150,15 +150,15 @@ ssize_t RecvSocket(int fd, void *buffer, size_t len, int flags)
 
 unsigned char *GetRouterIp(void)
 {
-int NLBUFSIZE = 8192;
-        struct nlmsghdr* nl_hdr;
-    	char buf_msg[NLBUFSIZE];
+
+	    struct nlmsghdr* nl_hdr;
+    	char buf_msg[1024];
     	char* buf_msg_p;
     	int sock, recv_len, total_recv_len;
     	struct in_addr *gateway;
-
-      gateway = Malloc(sizeof(struct in_addr));
-    	memset( buf_msg, 0, NLBUFSIZE );
+  
+      gateway = (struct in_addr *)malloc(sizeof(struct in_addr));
+    	memset( buf_msg, 0, 1024 );
     	nl_hdr = (struct nlmsghdr*) buf_msg;
 
     	// initialize the struct to get the route table
@@ -177,37 +177,35 @@ int NLBUFSIZE = 8192;
     	total_recv_len = 0;
 
     	// receive the answer
-    	while ((recv_len = recv( sock, buf_msg_p, NLBUFSIZE - total_recv_len, 0 )))
-        {
+    	while ( recv_len = recv( sock, buf_msg_p, 1024 - total_recv_len, 0 ) ) 
+	{
     	    struct nlmsghdr* nl_hdr_tmp = (struct nlmsghdr *) buf_msg_p;
 
     	    // if its done break for loop
         	if ( nl_hdr_tmp->nlmsg_type == NLMSG_DONE )
-                break;
-        	else
-            {
+			break;
+        	else 
+		{
             		buf_msg_p += recv_len;
             		total_recv_len += recv_len;
         	}
     	} // end of while
 
     // read the saved answers and extract the default gateway
-    while ( NLMSG_OK(nl_hdr, (unsigned )total_recv_len) )
+    while ( NLMSG_OK(nl_hdr, total_recv_len) ) 
     {
         struct rtmsg* rt_msg = (struct rtmsg*) NLMSG_DATA( nl_hdr );
         struct rtattr* rt_attr = (struct rtattr*) RTM_RTA( rt_msg );
         int rt_len = RTM_PAYLOAD( nl_hdr );
-        char gateway_tmp = 0, destination_tmp = 0;
-        char gate[20];
+        in_addr_t gateway_tmp = 0, destination_tmp = 0;
 
         // read the route table entry's
-        while( RTA_OK(rt_attr, rt_len) )
-        {
-            switch ( rt_attr->rta_type )
-            {
+        while( RTA_OK(rt_attr, rt_len) ) 
+	{
+            switch ( rt_attr->rta_type ) 
+	    {
                 case RTA_GATEWAY:
-                    memcpy( &gateway_tmp, RTA_DATA(rt_attr+4), sizeof(gateway_tmp));
-                    memcpy(gate, RTA_DATA(rt_attr), 20);
+                    memcpy( &gateway_tmp, RTA_DATA(rt_attr), sizeof(gateway_tmp) );
                     break;
                 case RTA_DST:
                     memcpy( &destination_tmp, RTA_DATA(rt_attr), sizeof(destination_tmp) );
@@ -220,8 +218,7 @@ int NLBUFSIZE = 8192;
         }
 
         // if the destination is 0.0.0.0 then its the gateway
-        if ( destination_tmp == 0 )
-        {
+        if ( destination_tmp == 0 ) {
             gateway->s_addr = gateway_tmp;
             break;
         }

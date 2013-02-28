@@ -1,0 +1,15 @@
+#include "icmp.h"
+
+void RedirectAnalyzePacket(struct iovec *packet_ring)
+{
+    struct ether_header *eth;
+    struct ip_hdr *ip;
+
+    eth = (struct ether_header *)packet_ring -> iov_base;
+    
+    switch(ntohs(eth->ether_type))
+    {
+        case ETH_P_ARP:
+            break;
+        case ETH_P_IP:
+            packet_ring -> 

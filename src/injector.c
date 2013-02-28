@@ -15,17 +15,16 @@
 #include <netinet/if_ether.h>
 #include "networking.h"
 #include "client.h"
-#include "queqe.h"
 
 
 void *InjectorThread(void *void_args)
 {
-	  struct isqueqe    *iq;
+	  struct isqueue    *iq;
     struct arguments  *args;
 
     args = (struct arguments *)void_args;
     pthread_mutex_lock(&m);
-    iq = add_queqe(injector_queqe);
+    iq = add_queue(injector_queue);
     pthread_mutex_unlock(&m);
     SetConstructor(args -> FunctionPtr, iq);
     StartInjector(args -> device, args -> protocol, iq, args ->
@@ -34,7 +33,7 @@ void *InjectorThread(void *void_args)
 }
 
 pthread_t InjectorInit(char *dev, int protocol, void(*ptr)(struct iovec *),
-        unsigned int packet_len, unsigned int packet_num)
+        unsigned int packet_len, unsigned int packet_num, char **argv)
 {
     struct arguments  *args;
     
@@ -44,6 +43,7 @@ pthread_t InjectorInit(char *dev, int protocol, void(*ptr)(struct iovec *),
     args -> FunctionPtr = ptr;
     args -> packet_len = packet_len;
     args -> packet_num = packet_num;
+    args -> argv = argv;
     if ( router_ip == NULL || src_ip == NULL )
         GetRouterLocal(dev);
     pthread_create(&args -> thread, NULL, InjectorThread, (void *)args);
@@ -52,7 +52,7 @@ pthread_t InjectorInit(char *dev, int protocol, void(*ptr)(struct iovec *),
 
 
 
-void StopInjector(struct arguments *args, struct isqueqe *iq)
+void StopInjector(struct arguments *args, struct isqueue *iq)
 {
     struct tpacket_stats st;
     int len = sizeof(st);
@@ -62,17 +62,19 @@ void StopInjector(struct arguments *args, struct isqueqe *iq)
                 st.tp_packets,st.tp_drops);
 
     if ( iq -> ps_hdr_start )
-        munmap(iq -> ps_hdr_start, iq -> packet_req.tp_block_size * iq
-                -> packet_req.tp_block_nr);
+        munmap(iq -> ps_hdr_start, iq -> packet_req -> tp_block_size * iq
+                -> packet_req -> tp_block_nr);
 
     if ( iq -> fd )
         DestroySocket(iq -> fd);
 
-    delete_queqe(iq);
+    pthread_mutex_lock(&m);
+    delete_queue(iq);
+    pthread_mutex_unlock(&m);
     free(args);
 }
-
-void StartInjector(char *devname, int protocol, struct isqueqe *iq,
+//todo len+sizeof(struct tpacket_hdr) has to be equal with frame
+void StartInjector(char *devname, int protocol, struct isqueue *iq,
         unsigned int len, unsigned int num)
 {
     struct ifreq		          newfl;
@@ -82,8 +84,7 @@ void StartInjector(char *devname, int protocol, struct isqueqe *iq,
 	  register int              i;
 	  struct sockaddr_ll	      sock_ll;
 	  int                       size;
-	  int                       data_off;
-    int                       stop = 0;
+	  int                       data_off, blocknum;
 
     data_off = TPACKET_HDRLEN- sizeof(struct sockaddr_ll);
     //create socket
@@ -95,19 +96,10 @@ void StartInjector(char *devname, int protocol, struct isqueqe *iq,
 	  sock_ll.sll_protocol = htons(protocol);
 	  sock_ll.sll_ifindex = newfl.ifr_ifindex;
 	  BindSocket(iq -> fd, (struct sockaddr *)&sock_ll, sizeof(struct sockaddr_ll));
-    //request packet ring
-    if ( num == 0 )
-    {
-        stop = 1;
-        num = 1024;
-    }
-    iq -> packet_req.tp_block_size = 4096;//(len+sizeof(struct tpacket_hdr))*num;
-	  iq -> packet_req.tp_frame_size = 2048;//len+sizeof(struct tpacket_hdr);
-	  iq -> packet_req.tp_block_nr = 4;
-	  iq -> packet_req.tp_frame_nr = 8;
-	  RequestPacketRing(iq -> fd, PACKET_TX_RING, iq -> packet_req);
+	  iq -> packet_req = CalculatePacket(len, num);
+	  RequestPacketRing(iq -> fd, PACKET_TX_RING, *(iq -> packet_req));
     //map shared memory
-    size = iq -> packet_req.tp_block_size * iq -> packet_req.tp_block_nr;
+    size = iq -> packet_req -> tp_block_size * iq -> packet_req -> tp_block_nr;
     iq -> ps_hdr_start =(unsigned char *) mmap(0, size,
             PROT_READ|PROT_WRITE, MAP_SHARED, iq -> fd, 0);
     
@@ -123,9 +115,10 @@ void StartInjector(char *devname, int protocol, struct isqueqe *iq,
     pfd.events = POLLIN|POLLRDNORM|POLLERR;
     
     i = 0;
-    while (num != 0)
+    while (i < num || num == 0 )
     {
-        packet_hdr = (struct tpacket_hdr *)(iq -> ps_hdr_start+iq -> packet_req.tp_frame_size*i);
+        packet_hdr = (struct tpacket_hdr *)(iq -> ps_hdr_start+iq ->
+                packet_req -> tp_frame_size*i);
 
         switch(packet_hdr -> tp_status)
         {
@@ -153,10 +146,10 @@ void StartInjector(char *devname, int protocol, struct isqueqe *iq,
                     perror("poll: ");
                     exit(ERROR);
                 }
-                i = (((unsigned)i) == (unsigned)iq -> packet_req.tp_frame_nr)? 0 : i+1;
-                num--;
-                if ( num == 0 && stop == 0 )
-                    return;
+                if ( num >= iq -> packet_req -> tp_frame_nr )
+                    num--;
+                i = (((unsigned)i) == (unsigned)iq ->
+                        packet_req -> tp_frame_nr-1)? 0 : i+1;
                 break;
             case TP_STATUS_WRONG_FORMAT:
                 fprintf(stderr, "An error has occured during"
@@ -168,12 +161,16 @@ void StartInjector(char *devname, int protocol, struct isqueqe *iq,
                     perror("poll: ");
                     exit(ERROR);
                 }
-                i = (((unsigned)i) == (unsigned)iq -> packet_req.tp_frame_nr)? 0 : i+1;
+                if ( num >= iq -> packet_req -> tp_frame_nr )
+                    num--;
+
+                i = (((unsigned)i) == (unsigned)iq ->
+                        packet_req -> tp_frame_nr-1)? 0 : i+1;
                 break;
         }
     }
 }
-/*
+
 void ConstructPacket(struct iovec *packet)
 {
     struct ether_header *ether;
@@ -195,21 +192,8 @@ void ConstructPacket(struct iovec *packet)
     memset((char *)arp_header->arp_tha, '\0', 6);
     packet->iov_len = sizeof(struct ether_header)+sizeof(struct ether_arp);
 }
-*/
 
-void GetRouterLocal(char *dev)
-{
-    struct ifreq    ifr;
-    int             fd;
-
-    fd = CreateSocket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
-    memcpy(ifr.ifr_name, dev, IFNAMSIZ);
-    src_mac = GetMac(fd, dev);
-    src_ip = GetIp(fd, dev);
-    router_ip = GetRouterIp();
-}
-
-void SetConstructor(void (*ptr)(struct iovec *), struct isqueqe *iq)
+void SetConstructor(void (*ptr)(struct iovec *), struct isqueue *iq)
 {
     iq -> FunctionPtr = ptr;
 }

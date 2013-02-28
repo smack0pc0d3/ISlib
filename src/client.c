@@ -1,4 +1,5 @@
 #include "client.h"
+#include "networking.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -105,17 +106,19 @@ void PrintClients()
 
     if( ClientExist() == -1 )
         return;
+    printf("_____________________________________________________\n");
     tmp = c;
     printf("=-=-=-=-=Clients=-=-=-=-=\n");
     do
     {
         printf("client mac [%d] = ", i);
         PrintMac(tmp->mac);
-        printf("\n");
+        printf("client ip [%d] = ", i);
+        PrintIp(tmp->ip);
         tmp = tmp -> next;
         i++;
     }while (tmp != (struct client *)NULL);
-    printf("=-=-=-=-=-=-=-=-=-=-=-=-=\n");
+    printf("=-=-=-=-=-=-=-=-=-=-=-=-=\n\n");
 }
 
 int RouterExist(void)
@@ -154,10 +157,13 @@ void PrintRouter(void)
     if( RouterExist() == -1 )
         return;
 
-    printf("=-=-=-=-=Router=-=-=-=-=");
+    printf("=-=-=-=-=Router=-=-=-=-=\n");
     printf("Router mac = ");
     PrintMac(router->mac);
-    printf("\n=-=-=-=-=-=-=-=-=-=-=-=-=\n\n");
+    printf("Router ip = ");
+    PrintIp(router->ip);
+    printf("=-=-=-=-=-=-=-=-=-=-=-=-=\n\n");
+    printf("_____________________________________________________\n");
 }
 
 void Client_Destroy(void)
@@ -165,4 +171,17 @@ void Client_Destroy(void)
     DeleteClient();
     free(router);
 }
+
+void GetRouterLocal(char *dev)
+{
+    struct ifreq    ifr;
+    int             fd;
+
+    fd = CreateSocket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+    memcpy(ifr.ifr_name, dev, IFNAMSIZ);
+    src_mac = GetMac(fd, dev);
+    src_ip = GetIp(fd, dev);
+    router_ip = GetRouterIp();
+}
+
 
