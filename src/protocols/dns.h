@@ -50,6 +50,6 @@ struct res_record
     unsigned char *rdata;
 };
 
-void ConstructDnsResponse(struct iovec *packet);
+void ConstructDnsResponse(struct iovec *packet, char **argv);
 #endif
 

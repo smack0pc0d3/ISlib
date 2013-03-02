@@ -7,7 +7,7 @@ extern unsigned char *src_ip;
 extern unsigned char *router_ip;
 extern unsigned char *src_mac;
 
-void AnalyzeArp(struct iovec *packet_ring)
+void AnalyzeArp(struct iovec *packet_ring, char **argv)
 {
     struct ether_header     *eth;
     struct  ether_arp       *arptr;
@@ -49,7 +49,7 @@ void AnalyzeArp(struct iovec *packet_ring)
     }
 }
 
-void ConstructArpReply(struct iovec *packet)
+void ConstructArpReply(struct iovec *packet, char **argv)
 {
     struct ether_header     *ether;
     struct ether_arp        *arp_header;
@@ -109,7 +109,7 @@ void ConstructArpReply(struct iovec *packet)
     return;
 }
 
-void ConstructArpRequest(struct iovec *packet)
+void ConstructArpRequest(struct iovec *packet, char **argv)
 {
 
     struct ether_header     *ether;

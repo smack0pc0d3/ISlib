@@ -7,7 +7,9 @@
 
 struct isqueue
 {
-    void                (*FunctionPtr)(struct iovec *); 
+    //struct isqueue      *parent; //what we waiting for
+
+    void                (*FunctionPtr)(struct iovec *, char **argv); 
     struct tpacket_req  *packet_req; //request space for mmap
     unsigned char       *ps_hdr_start; //available space for packet
     int                 fd;

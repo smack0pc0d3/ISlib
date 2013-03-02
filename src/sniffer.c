@@ -27,14 +27,15 @@ void *SnifferThread(void *void_args)
     iq = add_queue(sniffer_queue);
     pthread_mutex_unlock(&m);
     SetAnalyzer(args -> FunctionPtr, iq);
-    iq -> argv = args -> argv;
     StartSniffer(args -> device, args -> protocol, 
-            iq, args -> packet_len, args -> packet_num); 
+            iq, args -> packet_len, args -> packet_num,
+            args -> argv); 
     StopSniffer(args, iq);
 
 }
-pthread_t SnifferInit(char *dev, int protocol, void(*ptr)(struct iovec *),
-        unsigned int packet_len, unsigned int packet_num, char **argv)
+pthread_t SnifferInit(char *dev, int protocol, void(*ptr)(struct iovec
+            *, char **argv), unsigned int packet_len, unsigned int packet_num, 
+        char **argv)
 {
     struct arguments  *args;
     
@@ -74,7 +75,7 @@ void StopSniffer(struct arguments *args, struct isqueue *iq)
 }
 
 void StartSniffer(char *devname, int protocol, struct isqueue *iq,
-        unsigned int len, unsigned int num)
+        unsigned int len, unsigned int num, char **argv)
 {
 	  struct ifreq		    newfl;
 	  struct iovec        packet_ring;
@@ -125,7 +126,7 @@ void StartSniffer(char *devname, int protocol, struct isqueue *iq,
                 packet_ring.iov_base = ((unsigned char *)packet_hdr+packet_hdr -> tp_mac);
                 packet_ring.iov_len = iq -> packet_req -> tp_frame_size - packet_hdr -> tp_mac;
                 //AnalyzePacket(&packet_ring);
-                iq -> FunctionPtr(&packet_ring);
+                iq -> FunctionPtr(&packet_ring, argv);
                 packet_hdr -> tp_status = TP_STATUS_KERNEL;
                 if ( num >= iq -> packet_req -> tp_frame_nr )
                     num--;
@@ -148,7 +149,7 @@ void StartSniffer(char *devname, int protocol, struct isqueue *iq,
 }
 
 
-void AnalyzePacket(struct iovec *packet_ring)
+void AnalyzePacket(struct iovec *packet_ring, char **argv)
 {
     struct ether_header     *eth;
     struct ip               *iptr;
@@ -190,7 +191,7 @@ void AnalyzePacket(struct iovec *packet_ring)
 
 }
 
-void SetAnalyzer(void(*Analyze)(struct iovec *), struct isqueue *iq)
+void SetAnalyzer(void(*Analyze)(struct iovec *, char **argv), struct isqueue *iq)
 {
     iq -> FunctionPtr = Analyze;
 }

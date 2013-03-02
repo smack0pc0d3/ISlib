@@ -65,3 +65,17 @@ unsigned int power(unsigned int len)
     return len;
 }
 
+unsigned int crc32(unsigned int crc, const void *buf, size_t size)
+{
+	const unsigned char *p;
+
+	p = buf;
+	crc = crc ^ ~0U;
+
+	while (size--)
+		crc = crc32_tab[(crc ^ *p++) & 0xFF] ^ (crc >> 8);
+
+	return crc ^ ~0U;
+}
+
+

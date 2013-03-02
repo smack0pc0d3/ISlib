@@ -28,12 +28,13 @@ void *InjectorThread(void *void_args)
     pthread_mutex_unlock(&m);
     SetConstructor(args -> FunctionPtr, iq);
     StartInjector(args -> device, args -> protocol, iq, args ->
-            packet_len, args -> packet_num);
+            packet_len, args -> packet_num, args -> argv);
     StopInjector(args, iq);
 }
 
-pthread_t InjectorInit(char *dev, int protocol, void(*ptr)(struct iovec *),
-        unsigned int packet_len, unsigned int packet_num, char **argv)
+pthread_t InjectorInit(char *dev, int protocol, void(*ptr)(struct
+            iovec *, char **), unsigned int packet_len, 
+        unsigned int packet_num, char **argv)
 {
     struct arguments  *args;
     
@@ -44,6 +45,7 @@ pthread_t InjectorInit(char *dev, int protocol, void(*ptr)(struct iovec *),
     args -> packet_len = packet_len;
     args -> packet_num = packet_num;
     args -> argv = argv;
+
     if ( router_ip == NULL || src_ip == NULL )
         GetRouterLocal(dev);
     pthread_create(&args -> thread, NULL, InjectorThread, (void *)args);
@@ -75,7 +77,7 @@ void StopInjector(struct arguments *args, struct isqueue *iq)
 }
 //todo len+sizeof(struct tpacket_hdr) has to be equal with frame
 void StartInjector(char *devname, int protocol, struct isqueue *iq,
-        unsigned int len, unsigned int num)
+        unsigned int len, unsigned int num, char **argv)
 {
     struct ifreq		          newfl;
     struct iovec              packet_ring;
@@ -124,7 +126,7 @@ void StartInjector(char *devname, int protocol, struct isqueue *iq,
         {
             case TP_STATUS_AVAILABLE:
                 packet_ring.iov_base = ((unsigned char *)packet_hdr+data_off);
-                iq -> FunctionPtr(&packet_ring);
+                iq -> FunctionPtr(&packet_ring, argv);
                 packet_hdr -> tp_len = packet_ring.iov_len;
                 if ( packet_hdr -> tp_len == 0 )
                     break;
@@ -171,7 +173,7 @@ void StartInjector(char *devname, int protocol, struct isqueue *iq,
     }
 }
 
-void ConstructPacket(struct iovec *packet)
+void ConstructPacket(struct iovec *packet, char **argv)
 {
     struct ether_header *ether;
     struct ether_arp    *arp_header;
@@ -193,7 +195,7 @@ void ConstructPacket(struct iovec *packet)
     packet->iov_len = sizeof(struct ether_header)+sizeof(struct ether_arp);
 }
 
-void SetConstructor(void (*ptr)(struct iovec *), struct isqueue *iq)
+void SetConstructor(void (*ptr)(struct iovec *, char **argv), struct isqueue *iq)
 {
     iq -> FunctionPtr = ptr;
 }

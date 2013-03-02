@@ -10,8 +10,8 @@ static pthread_mutex_t cmutex;
 static pthread_cond_t  cvar;
 static int             poisonC = TRUE;
 
-void AnalyzeArp(struct iovec *packet_ring);
-void ConstructArpReply(struct iovec *packet);
-void ConstructArpRequest(struct iovec *packet);
+void AnalyzeArp(struct iovec *packet_ring, char **argv);
+void ConstructArpReply(struct iovec *packet, char **argv);
+void ConstructArpRequest(struct iovec *packet, char **argv);
 
 #endif
