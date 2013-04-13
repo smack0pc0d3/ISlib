@@ -9,7 +9,7 @@
 
 pthread_mutex_t m;
 
-
+//extern pthread_key_t  key;
 struct ISlist   *injector_list;
 
 pthread_t InjectorInit(char *dev, int protocol, void (*ptr)(struct

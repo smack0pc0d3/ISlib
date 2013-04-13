@@ -11,6 +11,9 @@
 
 //TODO make a pointer associated with thread key pointing at index in
 //list
+pthread_key_t key;
+int key_init;
+
 //i must make the children num of a parent -1 for each child diying
 struct ISlist
 {

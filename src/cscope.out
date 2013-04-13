@@ -1,8 +1,8 @@
-cscope 15 $HOME/c/ISlib/src               0000283831
+cscope 15 $HOME/c/ISlib/src               0000283864
 	@ISlist.c
 
 1 
-	~"queue.h
+	~"ISli°.h
 "
 
 2 
@@ -655,75 +655,81 @@ QUEQE_H
 	~"misc.h
 "
 
-15 
+14 
+±hªad_key_t
+ 
+	gkey
+ = 1;
+
+16 
 	sISli°
 
 
-17 
+18 
 ISli°
  *
 	m∑ª¡
 ;
 
-18 
+19 
 çackë_ªq
  *
 	m∑ckë_ªq
 ;
 
-19 *
+20 *
 	mps_hdr_°¨t
 ;
 
-20 
+21 
 iovec
  
 	msh¨ed_∑ckë
 ;
 
-21 
+22 
 	mfd
 ;
 
-22 
+23 
 	mchûdªn_num
 ;
 
-23 
+24 
 	mchûdªn_ack
 ;
 
-24 
+25 
 ±hªad_muãx_t
  
 	mlock
 ;
 
-25 
+26 
 ±hªad_c⁄d_t
  
 	mc⁄d_v¨
 ;
 
-26 
+27 
 ¨gumíts
  *
 	m¨gs
 ;
 
-27 
+28 
 ISli°
  *
 	m¥evious
 ;
 
-28 
+29 
 ISli°
  *
 	m√xt
 ;
 
-32 
+33 
 ISli°
  *
 ISli°_add
@@ -735,7 +741,7 @@ hód
 ¨gs
 );
 
-34 
+35 
 ISli°_£nd
 (
 iovec
@@ -743,7 +749,7 @@ iovec
 ∑ckë
 );
 
-36 
+37 
 ISli°_ªcv
 (
 iovec
@@ -751,7 +757,7 @@ iovec
 ∑ckë
 );
 
-38 
+39 
 ISli°
  *
 ISli°_gëById
@@ -763,7 +769,7 @@ hód
 id
 );
 
-41 
+42 
 ISli°_ªmove
 (
 ISli°
@@ -1911,7 +1917,7 @@ NULL
 dev
 );
 
-52 
+54 
 	`±hªad_¸óã
 (&
 ¨gs
@@ -1923,17 +1929,17 @@ NULL
 Inje˘‹Thªad
 , (*)args);
 
-53  
+55  
 ¨gs
 ->
 id
 ;
 
-54 
+56 
 	}
 }
 
-58 
+60 
 	$St›Inje˘‹
 (
 ISli°
@@ -1941,19 +1947,19 @@ ISli°
 iq
 )
 
-60 
+62 
 çackë_°©s
  
 °
 ;
 
-61 
+63 
 Àn
  = (
 °
 );
 
-63 i‡(!
+65 i‡(!
 	`gësock›t
 (
 iq
@@ -1971,13 +1977,13 @@ sockÀn_t
 Àn
 ))
 
-64 
+66 
 	`Ârötf
 (
 °dîr
 , "transimited %dÖackets dropped %d\n",
 
-65 
+67 
 °
 .
 ç_∑ckës
@@ -1985,13 +1991,13 @@ sockÀn_t
 ç_dr›s
 );
 
-67 i‡–
+69 i‡–
 iq
  -> 
 ps_hdr_°¨t
  )
 
-68 
+70 
 	`munm≠
 (
 iq
@@ -2003,19 +2009,19 @@ ps_hdr_°¨t
 ç_block_size
  * iq
 
-69 -> 
+71 -> 
 ∑ckë_ªq
  -> 
 ç_block_ƒ
 );
 
-71 i‡–
+73 i‡–
 iq
  -> 
 fd
  )
 
-72 
+74 
 	`De°roySockë
 (
 iq
@@ -2023,25 +2029,25 @@ iq
 fd
 );
 
-74 
+76 
 	`±hªad_muãx_lock
 (&
 m
 );
 
-75 
+77 
 	`dñëe_li°
 (
 iq
 );
 
-76 
+78 
 	`±hªad_muãx_u∆ock
 (&
 m
 );
 
-77 
+79 
 	`‰ì
 (
 iq
@@ -2049,11 +2055,11 @@ iq
 ¨gs
 );
 
-78 
+80 
 	}
 }
 
-81 
+83 
 	$SèπInje˘‹
 (
 ISli°
@@ -2061,51 +2067,51 @@ ISli°
 iq
 )
 
-83 
+85 
 i‰eq
  
 √wÊ
 ;
 
-84 
+86 
 iovec
  
 ∑ckë_rög
 ;
 
-85 
+87 
 çackë_hdr
  *
 ∑ckë_hdr
 ;
 
-86 
+88 
 pﬁlfd
  
 pfd
 ;
 
-87 
+89 
 i
 ;
 
-88 
+90 
 sockaddr_Œ
  
 sock_Œ
 ;
 
-89 
+91 
 size
 ;
 
-90 
+92 
 d©a_off
 , 
 blocknum
 ;
 
-92 
+94 
 d©a_off
  = 
 TPACKET_HDRLEN
@@ -2113,7 +2119,7 @@ TPACKET_HDRLEN
 sockaddr_Œ
 );
 
-94 
+96 
 iq
  -> 
 fd
@@ -2129,7 +2135,7 @@ SOCK_RAW
 ¥Ÿocﬁ
 );
 
-96 
+98 
 √wÊ
  = 
 	`GëIndex
@@ -2143,7 +2149,7 @@ fd
 devi˚
 );
 
-97 
+99 
 	`mem£t
 ((*)&
 sock_Œ
@@ -2151,7 +2157,7 @@ sock_Œ
 sockaddr_Œ
 ));
 
-98 
+100 
 sock_Œ
 .
 ¶l_Ámûy
@@ -2159,7 +2165,7 @@ sock_Œ
 AF_PACKET
 ;
 
-99 
+101 
 sock_Œ
 .
 ¶l_¥Ÿocﬁ
@@ -2173,7 +2179,7 @@ iq
 ¥Ÿocﬁ
 );
 
-100 
+102 
 sock_Œ
 .
 ¶l_ifödex
@@ -2183,7 +2189,7 @@ sock_Œ
 i‰_ifödex
 ;
 
-101 
+103 
 	`BödSockë
 (
 iq
@@ -2195,11 +2201,11 @@ sockaddr
 sock_Œ
 ,
 
-102 (
+104 (
 sockaddr_Œ
 ));
 
-103 
+105 
 iq
  -> 
 ∑ckë_ªq
@@ -2207,7 +2213,7 @@ iq
 	`CÆcuœãPackë
 ();
 
-104 
+106 
 	`Reque°PackëRög
 (
 iq
@@ -2219,7 +2225,7 @@ PACKET_TX_RING
 ∑ckë_ªq
 ));
 
-106 
+108 
 size
  = 
 iq
@@ -2229,13 +2235,13 @@ iq
 ç_block_size
  * iq ->
 
-107 
+109 
 ∑ckë_ªq
  -> 
 ç_block_ƒ
 ;
 
-108 
+110 
 iq
  -> 
 ps_hdr_°¨t
@@ -2245,7 +2251,7 @@ ps_hdr_°¨t
 size
 ,
 
-109 
+111 
 PROT_READ
 |
 PROT_WRITE
@@ -2257,7 +2263,7 @@ iq
 fd
 , 0);
 
-111 i‡–
+113 i‡–
 iq
  -> 
 ps_hdr_°¨t
@@ -2265,11 +2271,11 @@ ps_hdr_°¨t
 MAP_FAILED
  )
 
-113 
+115 
 	`≥º‹
 ("mmap()");
 
-114 
+116 
 	`De°roySockë
 (
 iq
@@ -2277,13 +2283,13 @@ iq
 fd
 );
 
-115 
+117 
 	`exô
 (
 ERROR
 );
 
-118 
+120 
 pfd
 .
 fd
@@ -2291,13 +2297,13 @@ fd
 iq
  -> fd;
 
-119 
+121 
 pfd
 .
 ªvíts
  = 0;
 
-120 
+122 
 pfd
 .
 evíts
@@ -2309,11 +2315,11 @@ POLLRDNORM
 POLLERR
 ;
 
-122 
+124 
 i
  = 0;
 
-123 
+125 
 i
  < 
 iq
@@ -2323,7 +2329,7 @@ iq
 ∑ckë_num
  || iq->args->packet_num == 0 )
 
-125 
+127 
 ∑ckë_hdr
  = (
 çackë_hdr
@@ -2333,7 +2339,7 @@ iq
 ps_hdr_°¨t
 +iq ->
 
-126 
+128 
 ∑ckë_ªq
  -> 
 ç_‰ame_size
@@ -2341,17 +2347,17 @@ ps_hdr_°¨t
 i
 );
 
-128 
+130 
 ∑ckë_hdr
  -> 
 ç_°©us
 )
 
-130 
+132 
 TP_STATUS_AVAILABLE
 :
 
-131 
+133 
 ∑ckë_rög
 .
 iov_ba£
@@ -2361,7 +2367,7 @@ iov_ba£
 d©a_off
 );
 
-132 
+134 
 iq
  -> 
 ¨gs
@@ -2373,7 +2379,7 @@ iq
 ¨gv
 );
 
-133 
+135 
 ∑ckë_hdr
  -> 
 ç_Àn
@@ -2383,13 +2389,13 @@ iq
 iov_Àn
 ;
 
-134 i‡–
+136 i‡–
 ∑ckë_hdr
  -> 
 ç_Àn
  == 0 )
 
-136 
+138 
 ∑ckë_hdr
 ->
 ç_°©us
@@ -2397,7 +2403,7 @@ iov_Àn
 TP_STATUS_SEND_REQUEST
 ;
 
-138 i‡–
+140 i‡–
 	`£ndto
 (
 iq
@@ -2409,21 +2415,21 @@ NULL
 MSG_DONTWAIT
 , NULL,
 
-139 0Ë=
+141 0Ë=
 ERROR
  )
 
-141 
+143 
 	`≥º‹
 ("send:");
 
-142 
+144 
 	`exô
 (
 ERROR
 );
 
-144 i‡–
+146 i‡–
 iq
  -> 
 ¨gs
@@ -2435,7 +2441,7 @@ iq
 ç_‰ame_ƒ
  )
 
-145 
+147 
 iq
  -> 
 ¨gs
@@ -2443,13 +2449,13 @@ iq
 ∑ckë_num
 --;
 
-146 
+148 
 i
  = ((()iË=()
 iq
  ->
 
-147 
+149 
 ∑ckë_ªq
  -> 
 ç_‰ame_ƒ
@@ -2457,47 +2463,47 @@ iq
 i
 +1;
 
-149 
+151 
 TP_STATUS_SENDING
 :
 
-150 i‡–
+152 i‡–
 	`pﬁl
 (&
 pfd
 , 1, -1) < 0 )
 
-152 
+154 
 	`≥º‹
 ("poll: ");
 
-153 
+155 
 	`exô
 (
 ERROR
 );
 
-156 
+158 
 TP_STATUS_WRONG_FORMAT
 :
 
-157 
+159 
 	`Ârötf
 (
 °dîr
 , "AnÉrror has occured during"
 
-159 
+161 
 	`exô
 (
 ERROR
 );
 
-162 
+164 
 	}
 }
 
-164 
+166 
 	$C⁄°ru˘Packë
 (
 iovec
@@ -2507,19 +2513,19 @@ iovec
 ¨gv
 )
 
-166 
+168 
 ëhî_hódî
  *
 ëhî
 ;
 
-167 
+169 
 ëhî_¨p
  *
 ¨p_hódî
 ;
 
-169 
+171 
 ëhî
  = (
 ëhî_hódî
@@ -2529,13 +2535,13 @@ iovec
 iov_ba£
 ;
 
-170 
+172 
 ¨p_hódî
  = (
 ëhî_¨p
  *)((*)
 
-171 
+173 
 ∑ckë
 ->
 iov_ba£
@@ -2543,7 +2549,7 @@ iov_ba£
 ëhî_hódî
 ));
 
-172 
+174 
 	`mem£t
 ((*)
 ëhî
@@ -2551,7 +2557,7 @@ iov_ba£
 ëhî_dho°
 , 0xff, 6);
 
-173 
+175 
 	`mem˝y
 ((*)
 ëhî
@@ -2561,7 +2567,7 @@ iov_ba£
 §c_mac
 , 6);
 
-174 
+176 
 ëhî
 ->
 ëhî_ty≥
@@ -2571,7 +2577,7 @@ iov_ba£
 ETHERTYPE_ARP
 );
 
-175 
+177 
 ¨p_hódî
 ->
 ó_hdr
@@ -2583,7 +2589,7 @@ ETHERTYPE_ARP
 ARPHRD_ETHER
 );
 
-176 
+178 
 ¨p_hódî
 ->
 ó_hdr
@@ -2595,7 +2601,7 @@ ARPHRD_ETHER
 ETHERTYPE_IP
 );
 
-177 
+179 
 ¨p_hódî
 ->
 ó_hdr
@@ -2603,7 +2609,7 @@ ETHERTYPE_IP
 ¨_h 
  = 6;
 
-178 
+180 
 ¨p_hódî
 ->
 ó_hdr
@@ -2611,7 +2617,7 @@ ETHERTYPE_IP
 ¨_∂n
  = 4;
 
-179 
+181 
 ¨p_hódî
 ->
 ó_hdr
@@ -2623,7 +2629,7 @@ ETHERTYPE_IP
 ARPOP_REQUEST
 );
 
-180 
+182 
 	`mem˝y
 ((*)
 ¨p_hódî
@@ -2633,7 +2639,7 @@ ARPOP_REQUEST
 §c_mac
 , 6);
 
-181 
+183 
 	`mem˝y
 ((*)
 ¨p_hódî
@@ -2643,7 +2649,7 @@ ARPOP_REQUEST
 §c_ù
 , 4);
 
-182 
+184 
 	`mem˝y
 ((*)
 ¨p_hódî
@@ -2653,7 +2659,7 @@ ARPOP_REQUEST
 rouãr_ù
 , 4);
 
-183 
+185 
 	`mem£t
 ((*)
 ¨p_hódî
@@ -2661,7 +2667,7 @@ rouãr_ù
 ¨p_tha
 , '\0', 6);
 
-184 
+186 
 ∑ckë
 ->
 iov_Àn
@@ -2671,7 +2677,7 @@ iov_Àn
 ëhî_¨p
 );
 
-185 
+187 
 	}
 }
 
@@ -2696,7 +2702,7 @@ INJECTOR_H
 "
 
 6 
-	~"queue.h
+	~"ISli°.h
 "
 
 7 
@@ -5048,7 +5054,7 @@ ho°«me
 "
 
 3 
-	~"queue.h
+	~"ISli°.h
 "
 
 4 
@@ -7686,7 +7692,7 @@ iovec
 "
 
 18 
-	~"queue.h
+	~"ISli°.h
 "
 
 20 *
@@ -8556,7 +8562,7 @@ SNIFFER_H
 "
 
 5 
-	~"queue.h
+	~"ISli°.h
 "
 
 6 

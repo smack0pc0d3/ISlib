@@ -17,8 +17,8 @@ struct ISlist *ISlist_add(struct ISlist **head, struct arguments *args)
     tmp -> children_ack = 0;
     tmp -> args = args;
     tmp -> args -> id = pthread_self();
-    
-    //find your father, if you dont wait till you do
+
+    //find your father(if any), if you dont, wait till you do
     if ( tmp -> args -> father_id != -1 )
     {
         while ( (tmp -> parent = ISlist_getById(sniffer_list, tmp -> args -> father_id)) == NULL )
@@ -29,6 +29,9 @@ struct ISlist *ISlist_add(struct ISlist **head, struct arguments *args)
         }
         tmp -> parent -> children_num++;
     }
+    //set yourself in the key
+    pthread_setspecific(key, (void *)tmp);
+
     return tmp;
 }
 
@@ -81,11 +84,14 @@ void ISlist_send(struct iovec *packet)
     t.tv_nsec = 9000;
 
     //find yourself in the ISlists
+    /*
     if (( tmp = ISlist_getById(injector_list, pthread_self())) == NULL
             )
         tmp = ISlist_getById(sniffer_list, pthread_self());
     if ( tmp == NULL )
         return;
+    */
+    tmp = (struct ISlist *)pthread_getspecific(key);
     pthread_mutex_lock(&tmp->lock);
 
     //if you dont have child return
@@ -110,13 +116,15 @@ void ISlist_recv(struct iovec *packet)
     struct ISlist *tmp;
 
     //find yourself
+    /*
     if (( tmp = ISlist_getById(injector_list, pthread_self())) == NULL
             )
         tmp = ISlist_getById(sniffer_list, pthread_self());
     if ( tmp == NULL )
         return;
-
-    //new code
+    */
+    tmp = (struct ISlist *)pthread_getspecific(key);
+    //if parent doesnt exist
     if ( tmp -> parent == NULL )
         return;
     pthread_mutex_lock(&tmp -> parent -> lock);

@@ -28,8 +28,6 @@ void *InjectorThread(void *void_args)
     pthread_mutex_unlock(&m);
     StartInjector(iq);
     StopInjector(iq);
-    //free(args);
-    //StopInjector(iq);
 }
 
 pthread_t InjectorInit(char *dev, int protocol, void(*ptr)(struct
@@ -49,6 +47,12 @@ pthread_t InjectorInit(char *dev, int protocol, void(*ptr)(struct
     //synch not needed because only main thread is going to execute this
     if ( router_ip == NULL || src_ip == NULL )
         GetRouterLocal(dev);
+    //initialize key
+    if ( key_init != 1 )
+    {
+        key_init = 1;
+        pthread_key_create(&key, NULL);
+    }
     pthread_create(&args -> id, NULL, InjectorThread, (void *)args);
     return args->id;
 }
