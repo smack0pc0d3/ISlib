@@ -24,6 +24,7 @@ struct ISlist
     int                 fd; //fd for our socket
     int                 children_num; //num of children
     int                 children_ack; //ack from children
+    int                 num_packet;
     pthread_mutex_t     lock; //lock 
     pthread_cond_t      cond_var; //condition variable for packet
     struct arguments    *args;

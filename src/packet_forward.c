@@ -59,6 +59,11 @@ void AnalyzePacketForward(struct iovec *packet, char **argv)
     if ( ntohs(ether -> ether_type) != ETHERTYPE_IP )
         return;
 
+    //for somereason there are packets with null shost dhost, ignore
+    if ( memcmp(ether->ether_shost,"\x00\x00\x00\x00\x00\x00", 6) == 0x00 || 
+            memcmp(ether->ether_dhost, "\x00\x00\x00\x00\x00\x00",6)  == 0x00 )
+        return;
+
     ip = (struct iphdr *)((unsigned char *)ether+sizeof(*ether));
     
     //i am an exception

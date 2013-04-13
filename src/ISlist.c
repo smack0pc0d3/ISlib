@@ -2,6 +2,7 @@
 #include <stdlib.h> //free
 #include <string.h> //memcpy
 #include "list.h" //add_list
+#include <limits.h> //int_max
 
 extern struct ISlist *sniffer_list;
 extern struct ISlist *injector_list;
@@ -15,6 +16,7 @@ struct ISlist *ISlist_add(struct ISlist **head, struct arguments *args)
     tmp -> shared_packet.iov_base = NULL;
     tmp -> children_num = 0;
     tmp -> children_ack = 0;
+    tmp -> num_packet = 0;
     tmp -> args = args;
     tmp -> args -> id = pthread_self();
 
@@ -78,10 +80,7 @@ struct ISlist *ISlist_getById(struct ISlist *head, pthread_t id)
 void ISlist_send(struct iovec *packet)
 {
     struct ISlist *tmp;
-    struct timespec t;
 
-    t.tv_sec = 0;
-    t.tv_nsec = 9000;
 
     //find yourself in the ISlists
     /*
@@ -100,14 +99,18 @@ void ISlist_send(struct iovec *packet)
         pthread_mutex_unlock(&tmp->lock);
         return;
     }
+    tmp->num_packet = (tmp->num_packet == INT_MAX)? 0:
+        tmp->num_packet+1;
+    tmp->children_ack = 0;
     //make packet shared
     tmp -> shared_packet.iov_base = packet -> iov_base;
     tmp -> shared_packet.iov_len = packet -> iov_len;
+    //wake up all children
     pthread_cond_broadcast(&tmp->cond_var);
     //sleep till all child send ack
     while ( tmp -> children_num != tmp -> children_ack )
         pthread_cond_wait(&tmp->cond_var, &tmp->lock);
-    tmp -> children_ack = 0;
+    //tmp -> children_ack = 0;
     pthread_mutex_unlock(&tmp->lock);
 }
 
@@ -116,27 +119,29 @@ void ISlist_recv(struct iovec *packet)
     struct ISlist *tmp;
 
     //find yourself
-    /*
-    if (( tmp = ISlist_getById(injector_list, pthread_self())) == NULL
-            )
-        tmp = ISlist_getById(sniffer_list, pthread_self());
-    if ( tmp == NULL )
-        return;
-    */
     tmp = (struct ISlist *)pthread_getspecific(key);
     //if parent doesnt exist
     if ( tmp -> parent == NULL )
         return;
+    //lock
     pthread_mutex_lock(&tmp -> parent -> lock);
-    while ( tmp -> parent -> shared_packet.iov_base 
-            == tmp -> shared_packet.iov_base )
+    //while parent shared packet is same
+    while ( tmp -> parent -> num_packet 
+            == tmp -> num_packet )
+        //wait for new shared
         pthread_cond_wait(&tmp->parent->cond_var, &tmp->parent->lock);
+    //make num_packet equal
+    tmp -> num_packet = tmp -> parent -> num_packet;
+    //when new arrives take it
     tmp -> shared_packet = tmp -> parent -> shared_packet;
+    //let father know that you took it
     tmp->parent->children_ack++;
     pthread_cond_signal(&tmp->parent->cond_var);
+    //copy it
     memcpy(packet -> iov_base, tmp -> shared_packet.iov_base,
             tmp -> shared_packet.iov_len);
     packet -> iov_len = tmp -> shared_packet.iov_len;
+    //unlock
     pthread_mutex_unlock(&tmp -> parent -> lock);
 }
 
