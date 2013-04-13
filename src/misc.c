@@ -1,5 +1,7 @@
 #include "misc.h"
 #include <stdio.h>
+#include <netinet/if_ether.h>
+#include <netinet/ip.h>
 
 void PrintMac(unsigned char *mac)
 {
@@ -41,7 +43,7 @@ void *Malloc(size_t size)
     return p;
 }
 
-struct tpacket_req *CalculatePacket(unsigned int len, unsigned int num)
+struct tpacket_req *CalculatePacket(void)
 {
     struct tpacket_req  *p = Malloc(sizeof(struct tpacket_req));
   
@@ -53,29 +55,39 @@ struct tpacket_req *CalculatePacket(unsigned int len, unsigned int num)
     return p;
 }
 
-unsigned int power(unsigned int len)
+unsigned int checksum(unsigned char *buf, unsigned nbytes, unsigned
+        int sum)
 {
-    register int i;
-    unsigned int p = 2;
+	int i;
 
-    for ( i = 0; i < len; i++)
-    {
-        p *= p;
-    }
-    return len;
+	for (i = 0; i < (nbytes & ~1U); i += 2)
+	{
+		sum += (unsigned short)ntohs(*((unsigned short *)(buf + i)));
+		if (sum > 0xFFFF)
+			sum -= 0xFFFF;
+	}
+	if (i < nbytes)
+	{
+		sum += buf[i] << 8;
+		if (sum > 0xFFFF)
+			sum -= 0xFFFF;
+	}
+	return (sum);
 }
 
-unsigned int crc32(unsigned int crc, const void *buf, size_t size)
+unsigned int wrapsum(unsigned int sum)
 {
-	const unsigned char *p;
+	sum = ~sum & 0xFFFF;
+	return (htons(sum));
+}
 
-	p = buf;
-	crc = crc ^ ~0U;
+unsigned int calculate_packet_len(struct iovec *packet)
+{
+    struct iphdr            *ip;
 
-	while (size--)
-		crc = crc32_tab[(crc ^ *p++) & 0xFF] ^ (crc >> 8);
-
-	return crc ^ ~0U;
+    ip = (struct iphdr *)((unsigned char *)packet->iov_base+sizeof(struct ether_header));
+    
+    return (ntohs(ip -> tot_len)+sizeof(struct ether_header));
 }
 
 

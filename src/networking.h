@@ -20,6 +20,8 @@ struct ifreq SetFlags(int fd, struct ifreq oldfl, int new_flags);
 struct ifreq GetIndex(int fd, char *devname);
 unsigned char *GetIp(int fd, char *devname);
 unsigned char *GetMac(int fd, char *devname);
+unsigned char *GetNetmask(int fd, char *devname);
+unsigned char *GetBroadcast(int fd, char *device);
 void SetPromisc(int fd, struct ifreq ifr);
 void RequestPacketRing(int fd, int flag, struct tpacket_req packet_req);
 unsigned char *GetRouterIp(void);

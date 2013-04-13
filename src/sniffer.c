@@ -15,27 +15,24 @@
 #include <netinet/if_ether.h>
 #include "networking.h"
 #include "client.h"
-#include "queue.h"
+#include "ISlist.h"
 
 void *SnifferThread(void *void_args)
 {
-    struct isqueue    *iq;
+    struct ISlist    *iq;
     struct arguments  *args;
 
     args = (struct arguments *)void_args;
     pthread_mutex_lock(&m);
-    iq = add_queue(sniffer_queue);
+    iq = ISlist_add(&sniffer_list, args);
     pthread_mutex_unlock(&m);
-    SetAnalyzer(args -> FunctionPtr, iq);
-    StartSniffer(args -> device, args -> protocol, 
-            iq, args -> packet_len, args -> packet_num,
-            args -> argv); 
-    StopSniffer(args, iq);
+    StartSniffer(iq); 
+    StopSniffer(iq);
 
 }
 pthread_t SnifferInit(char *dev, int protocol, void(*ptr)(struct iovec
-            *, char **argv), unsigned int packet_len, unsigned int packet_num, 
-        char **argv)
+            *, char **argv), unsigned int packet_num, 
+        char **argv, pthread_t father_id)
 {
     struct arguments  *args;
     
@@ -43,17 +40,18 @@ pthread_t SnifferInit(char *dev, int protocol, void(*ptr)(struct iovec
     args -> device = dev;
     args -> protocol = protocol;
     args -> FunctionPtr = ptr;
-    args -> packet_len = packet_len;
     args -> packet_num = packet_num;
     args -> argv = argv;
+    args -> father_id = father_id;
+
     if ( router_ip == NULL || src_ip == NULL )
         GetRouterLocal(dev);
-    pthread_create(&args -> thread, NULL, SnifferThread, (void *)args);
+    pthread_create(&args -> id, NULL, SnifferThread, (void *)args);
 
-    return args->thread;
+    return args->id;
 }
 
-void StopSniffer(struct arguments *args, struct isqueue *iq)
+void StopSniffer(struct ISlist *iq)
 {
     struct tpacket_stats st;
     int len = sizeof(st);
@@ -69,27 +67,26 @@ void StopSniffer(struct arguments *args, struct isqueue *iq)
     if ( iq -> fd )
         DestroySocket(iq -> fd);
     pthread_mutex_lock(&m);
-    delete_queue(iq);
+    ISlist_remove(iq);
     pthread_mutex_unlock(&m);
-    free(args);
+    free(iq -> args);
 }
 
-void StartSniffer(char *devname, int protocol, struct isqueue *iq,
-        unsigned int len, unsigned int num, char **argv)
+void StartSniffer(struct ISlist *iq)
 {
-	  struct ifreq		    newfl;
-	  struct iovec        packet_ring;
-	  struct tpacket_hdr  *packet_hdr;
-	  struct pollfd       pfd;
-	  register int        i;
-	  int                 size;
-
-	  iq -> fd = CreateSocket(PF_PACKET, SOCK_RAW, protocol);
-	  newfl = GetIndex(iq -> fd, devname);
-	  //promiscous mode
+    struct ifreq        newfl;
+    struct iovec        packet_ring;
+	struct tpacket_hdr  *packet_hdr;
+    struct pollfd       pfd;
+    register int        i;
+    int                 size;
+    
+    iq -> fd = CreateSocket(PF_PACKET, SOCK_RAW, iq -> args -> protocol);
+    newfl = GetIndex(iq -> fd, iq -> args -> device);
+    //promiscous mode
     SetPromisc(iq -> fd, newfl);
     //calculate packet request for packet_ring
-    iq -> packet_req = CalculatePacket(len, num);
+    iq -> packet_req = CalculatePacket();
     RequestPacketRing(iq -> fd, PACKET_RX_RING, *(iq -> packet_req));
     size = iq -> packet_req -> tp_block_size * iq -> packet_req -> tp_block_nr;
     iq -> ps_hdr_start =(unsigned char *) mmap(0, size,
@@ -101,16 +98,15 @@ void StartSniffer(char *devname, int protocol, struct isqueue *iq,
         DestroySocket(iq -> fd);
         exit(ERROR);
     }
-
-	  pfd.fd = iq -> fd;
+    pfd.fd = iq -> fd;
     pfd.revents = 0;
     pfd.events = POLLIN|POLLRDNORM|POLLERR;
     
-    i = 0; 
-    while(i < num || num == 0)
-	  {
+    i = 0;
+    while(i < iq->args->packet_num || iq->args->packet_num == 0)
+    {
         packet_hdr = (struct tpacket_hdr *)
-            (iq -> ps_hdr_start+iq -> packet_req -> tp_frame_size*i);     
+            (iq -> ps_hdr_start+iq -> packet_req -> tp_frame_size*i);
         switch(packet_hdr -> tp_status)
         {
             case TP_STATUS_KERNEL:
@@ -119,17 +115,19 @@ void StartSniffer(char *devname, int protocol, struct isqueue *iq,
                     perror("poll: ");
                     exit(ERROR);
                 }
+                if ( packet_hdr -> tp_status != TP_STATUS_USER )
+                    packet_hdr -> tp_status = TP_STATUS_USER;
                 break;
             case TP_STATUS_USER:
-			      case 5:
-			      case 9:
+            case 5:
+            case 9:
+            case 13:
                 packet_ring.iov_base = ((unsigned char *)packet_hdr+packet_hdr -> tp_mac);
                 packet_ring.iov_len = iq -> packet_req -> tp_frame_size - packet_hdr -> tp_mac;
-                //AnalyzePacket(&packet_ring);
-                iq -> FunctionPtr(&packet_ring, argv);
+                iq -> args -> FunctionPtr(&packet_ring, iq -> args -> argv);
                 packet_hdr -> tp_status = TP_STATUS_KERNEL;
-                if ( num >= iq -> packet_req -> tp_frame_nr )
-                    num--;
+                if ( iq -> args->packet_num >= iq -> packet_req -> tp_frame_nr )
+                    iq->args->packet_num--;
                 i = (((unsigned)i) == (unsigned)iq -> packet_req ->
                         tp_frame_nr-1)? 0 : i+1;
                 break;
@@ -139,8 +137,8 @@ void StartSniffer(char *devname, int protocol, struct isqueue *iq,
                     perror("poll: ");
                     exit(ERROR);
                 }
-                if ( num >= iq -> packet_req -> tp_frame_nr )
-                    num--;
+                if ( iq -> args -> packet_num >= iq -> packet_req -> tp_frame_nr )
+                    iq->args->packet_num--;
                 i = (((unsigned)i) == (unsigned)iq -> packet_req ->
                         tp_frame_nr-1)? 0 : i+1;
                 break;
@@ -188,11 +186,5 @@ void AnalyzePacket(struct iovec *packet_ring, char **argv)
             printf("unknown\n");
             break;
     }
-
-}
-
-void SetAnalyzer(void(*Analyze)(struct iovec *, char **argv), struct isqueue *iq)
-{
-    iq -> FunctionPtr = Analyze;
 }
 

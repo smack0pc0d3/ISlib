@@ -14,6 +14,8 @@ struct client
 unsigned char *src_mac;
 unsigned char *src_ip;
 unsigned char *router_ip;
+unsigned char *netmask;
+unsigned char *broadcast;
 static struct client   *c;
 static struct client   *router;
 
@@ -25,7 +27,8 @@ void PrintClients(void);
 void PrintRouter(void);
 void AddClient(unsigned char *mac, unsigned char *ip);
 void AddRouter(unsigned char *mac, unsigned char *ip);
-int SearchClientMac(unsigned char *mac);
+int SearchClientMac(unsigned char *mac); //returns true if mac exist in clients
+char *GetMacByIp(unsigned int ip);
 struct client *GetClient(int i);
 struct client *GetRouter(void);
 void GetRouterLocal(char *dev);

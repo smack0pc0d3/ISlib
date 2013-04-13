@@ -1,2 +1,23 @@
+
 ISlib will be an easy to use Injector Sniffer library 
 assisting anyone to write a specific protocol (injector/sniffer)
+
+Notes on development:
+
+1)injector and snifffer source has 2 structs, "arguments" and
+"isqueqe". i)"argument" struct holds all the variables which we are going
+to need only for the function "Start". ii)Struct isqueqe holds the
+variables which we are going to use function Stop 2, so we need these
+variables to be global(because stop isnt going to be called through 
+Start) and different for each thread, so struct isqueqe is a queqe
+
+2)injector and sniffer source are constructed by these simple
+functions Init,Thread, Start and Stop. i)Init organize the 
+arguments for the thread and starts the thread on 'Thread' 
+function. ii)Thread function adds in the queqe the new struct 
+and calls Start.iii) Start requests the shared ring and 
+allocates space for packets and then loops while calling
+your function iv)Deallocates the shared ring and all 
+the resources
+
+

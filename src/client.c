@@ -80,6 +80,23 @@ struct client *GetClient(int i)
 
     return tmp;
 }
+char *GetMacByIp(unsigned int ip)
+{
+    struct client   *c;
+    register int    i = 0;
+
+    while ( (c = GetClient(i)) != NULL )
+    {
+        if ( memcmp((char *)&c-> ip, (char *)&ip, 4) == 0 )
+            break;
+        i++;
+    }
+
+    if ( c == NULL )
+        return NULL;
+
+    return c -> mac;
+}
 
 void DeleteClient(void)
 {
@@ -170,6 +187,12 @@ void Client_Destroy(void)
 {
     DeleteClient();
     free(router);
+    free(src_ip);
+    free(src_mac);
+
+    if ( netmask )
+        free(netmask);
+
 }
 
 void GetRouterLocal(char *dev)
@@ -181,7 +204,8 @@ void GetRouterLocal(char *dev)
     memcpy(ifr.ifr_name, dev, IFNAMSIZ);
     src_mac = GetMac(fd, dev);
     src_ip = GetIp(fd, dev);
+    netmask = GetNetmask(fd, dev);
     router_ip = GetRouterIp();
+    broadcast = GetBroadcast(fd, dev);
 }
-
 

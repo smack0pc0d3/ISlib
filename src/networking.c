@@ -287,3 +287,40 @@ unsigned char *GetIp(int fd, char *device)
     return ip;
 }
 
+unsigned char *GetBroadcast(int fd, char *device)
+{
+    unsigned char   *broadcast;
+    struct ifreq    ifr;
+
+    broadcast = Malloc(sizeof(unsigned char) *4);
+    memcpy(ifr.ifr_name, device, IFNAMSIZ);
+    
+    if ( ioctl(fd, SIOCGIFBRDADDR, &ifr) == ERROR )
+    {
+        DestroySocket(fd);
+        perror("ioctl:");
+        exit(ERROR);
+    }
+    memcpy(broadcast, (char *)&((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr, 4);
+    
+    return broadcast;
+}
+
+unsigned char *GetNetmask(int fd, char *device)
+{
+    unsigned char       *netmask;
+    struct ifreq        ifr;
+
+    netmask = Malloc(sizeof(unsigned char) *4);
+    memcpy(ifr.ifr_name, device, IFNAMSIZ);
+
+    if ( ioctl(fd, SIOCGIFNETMASK, &ifr) == ERROR )
+    {
+        DestroySocket(fd);
+        perror("ioctl:");
+        exit(ERROR);
+    }
+    memcpy(netmask, (char *)&((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr, 4);
+    return netmask;
+}
+
