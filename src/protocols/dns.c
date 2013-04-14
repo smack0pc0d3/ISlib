@@ -105,7 +105,7 @@ void DnsResponse(struct iovec *packet, char **argv)
     //dns 
     dns = (struct dnshdr *)((unsigned char *)udp+sizeof(*udp));
     dns -> ans_count = htons(1);
-    dns -> flags = htons(0x8400);//htons(0x8180);
+    dns -> flags = htons(0x8500);//htons(0x8180);
     //res_record answer 
     answer = (struct res_record *)((unsigned char
                 *)query+sizeof(struct question) + strlen((char
@@ -122,8 +122,9 @@ void DnsResponse(struct iovec *packet, char **argv)
                 question)+strlen((char *)&query ->
                     name)+1+sizeof(*answer));
     ip -> tot_len = htons(sizeof(*ip)+ntohs(udp->len));
-    //udp -> check = crc32(0, udp, sizeof(*udp));
-    ip -> check = wrapsum(checksum((unsigned char *)ip, sizeof(*ip), 0));
+    ip -> check = ComputeChecksum(ip, sizeof(*ip)); 
+    //wrapsum(checksum((unsigned char *)ip, sizeof(*ip), 0));
+    /*
     udp -> check = wrapsum(checksum((unsigned char *)udp,
                 sizeof(*udp), checksum(dns, sizeof(*dns)+sizeof(struct
                         question)+strlen((char *)&query ->
@@ -131,6 +132,8 @@ void DnsResponse(struct iovec *packet, char **argv)
                 checksum((unsigned char *)&ip->saddr, 2 *
                     sizeof(ip->saddr), IPPROTO_UDP +(unsigned
                         int)ntohs(udp->len))));
+    */
+    //udp -> check = ComputeChecksum(udp, sizeof(*udp));
     packet -> iov_len = (ntohs(ip -> tot_len)+sizeof(*ether));
 }
 
