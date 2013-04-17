@@ -20,4 +20,8 @@ allocates space for packets and then loops while calling
 your function iv)Deallocates the shared ring and all 
 the resources
 
+COMPILE:
+make
+gcc -o test test.c ISlib.a -pthread
+
 

@@ -122,18 +122,8 @@ void DnsResponse(struct iovec *packet, char **argv)
                 question)+strlen((char *)&query ->
                     name)+1+sizeof(*answer));
     ip -> tot_len = htons(sizeof(*ip)+ntohs(udp->len));
-    ip -> check = ComputeChecksum(ip, sizeof(*ip)); 
-    //wrapsum(checksum((unsigned char *)ip, sizeof(*ip), 0));
-    /*
-    udp -> check = wrapsum(checksum((unsigned char *)udp,
-                sizeof(*udp), checksum(dns, sizeof(*dns)+sizeof(struct
-                        question)+strlen((char *)&query ->
-                            name)+sizeof(struct rdata)+4),
-                checksum((unsigned char *)&ip->saddr, 2 *
-                    sizeof(ip->saddr), IPPROTO_UDP +(unsigned
-                        int)ntohs(udp->len))));
-    */
-    //udp -> check = ComputeChecksum(udp, sizeof(*udp));
+    ip -> check = compute_checksum(ip, sizeof(*ip)); 
+    udp->check = compute_udp_checksum(ip, udp);
     packet -> iov_len = (ntohs(ip -> tot_len)+sizeof(*ether));
 }
 

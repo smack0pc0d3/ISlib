@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
+#include <netinet/tcp.h>
+#include <netinet/udp.h>
+
 
 void PrintMac(unsigned char *mac)
 {
@@ -55,32 +58,6 @@ struct tpacket_req *CalculatePacket(void)
     return p;
 }
 
-unsigned int checksum(unsigned char *buf, unsigned nbytes, unsigned
-        int sum)
-{
-	int i;
-
-	for (i = 0; i < (nbytes & ~1U); i += 2)
-	{
-		sum += (unsigned short)ntohs(*((unsigned short *)(buf + i)));
-		if (sum > 0xFFFF)
-			sum -= 0xFFFF;
-	}
-	if (i < nbytes)
-	{
-		sum += buf[i] << 8;
-		if (sum > 0xFFFF)
-			sum -= 0xFFFF;
-	}
-	return (sum);
-}
-
-unsigned int wrapsum(unsigned int sum)
-{
-	sum = ~sum & 0xFFFF;
-	return (htons(sum));
-}
-
 unsigned int calculate_packet_len(struct iovec *packet)
 {
     struct iphdr            *ip;
@@ -90,25 +67,100 @@ unsigned int calculate_packet_len(struct iovec *packet)
     return (ntohs(ip -> tot_len)+sizeof(struct ether_header));
 }
 
-/* Ripped from Richard Stevans Book */
 
-unsigned short ComputeChecksum(unsigned char *data, int len)
-{
-         long sum = 0;  /* assume 32 bit long, 16 bit short */
-	 unsigned short *temp = (unsigned short *)data;
+unsigned short compute_checksum(unsigned short *addr, unsigned int count) {
 
-         while(len > 1){
-             sum += *temp++;
-             if(sum & 0x80000000)   /* if high order bit set, fold */
-               sum = (sum & 0xFFFF) + (sum >> 16);
-             len -= 2;
-         }
+  register unsigned long sum = 0;
 
-         if(len)       /* take care of left over byte */
-             sum += (unsigned short) *((unsigned char *)temp);
-          
-         while(sum>>16)
-             sum = (sum & 0xFFFF) + (sum >> 16);
+  while (count > 1) {
+    sum += * addr++;
+    count -= 2;
+  }
+  //if any bytes left, pad the bytes and add
+  if(count > 0) {
 
-        return ~sum;
+    sum += ((*addr)&htons(0xFF00));
+
+  }
+
+  //Fold sum to 16 bits: add carrier to result
+  while (sum>>16) {
+      sum = (sum & 0xffff) + (sum >> 16);
+  }
+
+  //one's complement
+  sum = ~sum;
+  return ((unsigned short)sum);
 }
+
+void compute_tcp_checksum(struct iphdr *pIph, unsigned short *ipPayload) {
+
+    register unsigned long sum = 0;
+    unsigned short tcpLen = ntohs(pIph->tot_len) - (pIph->ihl<<2);
+    struct tcphdr *tcphdrp = (struct tcphdr*)(ipPayload);
+
+    //add the pseudo header 
+    //the source ip
+    sum += (pIph->saddr>>16)&0xFFFF;
+    sum += (pIph->saddr)&0xFFFF;
+    //the dest ip
+    sum += (pIph->daddr>>16)&0xFFFF;
+    sum += (pIph->daddr)&0xFFFF;
+    //protocol and reserved: 6
+    sum += htons(IPPROTO_TCP);
+    //the length
+    sum += htons(tcpLen);
+
+    //add the IP payload
+    //initialize checksum to 0
+    tcphdrp->check = 0;
+    while (tcpLen > 1) {
+        sum += * ipPayload++;
+        tcpLen -= 2;
+    }
+
+    //if any bytes left, pad the bytes and add
+    if(tcpLen > 0) {
+        sum += ((*ipPayload)&htons(0xFF00));
+    }
+    //Fold 32-bit sum to 16 bits: add carrier to result
+    while (sum>>16) {
+          sum = (sum & 0xffff) + (sum >> 16);
+    }
+    sum = ~sum;
+    //set computation result
+    tcphdrp->check = (unsigned short)sum;
+}
+
+void compute_udp_checksum(struct iphdr *pIph, unsigned short *ipPayload)
+{
+    register unsigned long sum = 0;
+    struct udphdr *udphdrp = (struct udphdr*)(ipPayload);
+    unsigned short udpLen = htons(udphdrp->len);
+
+    sum += (pIph->saddr>>16)&0xFFFF;
+    sum += (pIph->saddr)&0xFFFF;
+    //the dest ip
+    sum += (pIph->daddr>>16)&0xFFFF;
+    sum += (pIph->daddr)&0xFFFF;
+    //protocol and reserved: 17
+    sum += htons(IPPROTO_UDP);
+    //the length
+    sum += udphdrp->len;
+    udphdrp->check = 0;
+
+    while (udpLen > 1) {
+        sum += * ipPayload++;
+        udpLen -= 2;
+    }
+
+    if(udpLen > 0) {
+        sum += ((*ipPayload)&htons(0xFF00));
+    }
+    while (sum>>16) {
+        sum = (sum & 0xffff) + (sum >> 16);
+    }
+    sum = ~sum;
+    udphdrp->check = ((unsigned short)sum == 0x0000)?0xFFFF:(unsigned short)sum;
+}
+
